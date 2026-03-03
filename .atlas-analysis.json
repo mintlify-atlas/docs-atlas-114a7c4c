@@ -1,0 +1,124 @@
+{
+  "projectType": "saas",
+  "projectName": "Pramukh Men's Wear",
+  "projectDescription": "Multi-branch retail POS and inventory management system for men's wear businesses",
+  "theme": "linden",
+  "primaryColor": "#0f172a",
+  "lightColor": "#3b82f6",
+  "darkColor": "#1e40af",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": ["introduction", "quickstart", "deployment"]
+          },
+          {
+            "group": "Core Features",
+            "pages": [
+              "features/dashboard",
+              "features/point-of-sale",
+              "features/inventory-management",
+              "features/customer-management",
+              "features/vendor-purchases",
+              "features/multi-branch"
+            ]
+          },
+          {
+            "group": "Setup & Configuration",
+            "pages": [
+              "setup/environment-variables",
+              "setup/database-schema",
+              "setup/authentication",
+              "setup/branch-setup"
+            ]
+          },
+          {
+            "group": "User Guides",
+            "pages": [
+              "guides/creating-first-sale",
+              "guides/managing-inventory",
+              "guides/recording-purchases",
+              "guides/user-roles-permissions"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Database",
+        "groups": [
+          {
+            "group": "Schema",
+            "pages": [
+              "database/overview",
+              "database/branches-users",
+              "database/inventory",
+              "database/sales-customers",
+              "database/purchases-vendors"
+            ]
+          },
+          {
+            "group": "Reference",
+            "pages": [
+              "database/migrations",
+              "database/row-level-security"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Development",
+        "groups": [
+          {
+            "group": "Architecture",
+            "pages": [
+              "development/project-structure",
+              "development/app-context",
+              "development/server-actions"
+            ]
+          },
+          {
+            "group": "Components",
+            "pages": [
+              "development/ui-components",
+              "development/forms-validation"
+            ]
+          },
+          {
+            "group": "Contributing",
+            "pages": [
+              "development/local-development",
+              "development/coding-standards"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Multi-branch retail management with role-based access control",
+    "Point of sale billing with payment tracking",
+    "Comprehensive inventory management (items, variants, categories, colors)",
+    "Customer records and credit tracking",
+    "Vendor management and purchase orders",
+    "Real-time sales dashboard with revenue analytics",
+    "Supabase authentication and database integration",
+    "Mobile-responsive UI with dark mode support"
+  ],
+  "publicApiSurface": [
+    "getAppContext() - Server-side context for authenticated users",
+    "/dashboard - Sales overview and analytics",
+    "/pos - Point of sale billing interface",
+    "/inventory - Item and variant management",
+    "/inventory/categories - Category management",
+    "/inventory/colors - Color management",
+    "/customers - Customer records",
+    "/vendors - Vendor management",
+    "/purchases - Purchase order tracking",
+    "/branches - Multi-branch administration",
+    "/configurations - System settings",
+    "Database: branch, user_profile, branch_user, item, item_variant, category, color, sale, sale_item, customer, vendor, purchase, purchase_item, customer_payment, vendor_payment"
+  ]
+}
