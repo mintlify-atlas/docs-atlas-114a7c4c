@@ -1,0 +1,766 @@
+---
+title: Forms & Validation
+description: Form handling with react-hook-form and zod validation schemas
+---
+
+## Overview
+
+Pramukh Men's Wear uses [react-hook-form](https://react-hook-form.com/) for form state management and [zod](https://zod.dev/) for schema validation. This combination provides type-safe forms with minimal re-renders and comprehensive validation.
+
+## Core Stack
+
+- **react-hook-form**: Form state management and validation
+- **zod**: Runtime type validation and schema definition
+- **@hookform/resolvers/zod**: Bridge between react-hook-form and zod
+- **shadcn/ui Form components**: Pre-styled form components with accessibility
+
+## Form Components
+
+The base form components are located in `components/ui/form.tsx`.
+
+### Form Structure
+
+```typescript
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+
+// Define schema
+const schema = z.object({
+  name: z.string().min(1, "Name is required"),
+  email: z.string().email("Invalid email address"),
+});
+
+type FormValues = z.infer<typeof schema>;
+
+function MyForm() {
+  const form = useForm<FormValues>({
+    resolver: zodResolver(schema),
+    defaultValues: {
+      name: "",
+      email: "",
+    },
+  });
+
+  const onSubmit = (values: FormValues) => {
+    console.log(values);
+  };
+
+  return (
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <FormField
+          control={form.control}
+          name="name"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Name</FormLabel>
+              <FormControl>
+                <Input {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <Button type="submit">Submit</Button>
+      </form>
+    </Form>
+  );
+}
+```
+
+### Form Component Breakdown
+
+#### Form Provider
+
+```typescript
+import { Form } from "@/components/ui/form";
+
+<Form {...form}>
+  {/* form.* methods are now available to children */}
+</Form>
+```
+
+Provides form context to all child components.
+
+#### FormField
+
+```typescript
+<FormField
+  control={form.control}
+  name="fieldName"
+  render={({ field }) => (
+    <FormItem>
+      <FormLabel>Label</FormLabel>
+      <FormControl>
+        <Input {...field} />
+      </FormControl>
+      <FormMessage />
+    </FormItem>
+  )}
+/>
+```
+
+- Connects field to form state
+- Provides field props (value, onChange, etc.)
+- Manages validation state
+
+#### FormItem
+
+Wrapper that provides spacing and structure:
+
+```typescript
+<FormItem>
+  {/* Contains label, control, description, and message */}
+</FormItem>
+```
+
+#### FormLabel
+
+Accessible label with error styling:
+
+```typescript
+<FormLabel>Field Label</FormLabel>
+```
+
+Automatically shows error state with red text when field has validation error.
+
+#### FormControl
+
+Wraps the actual input component:
+
+```typescript
+<FormControl>
+  <Input {...field} />
+</FormControl>
+```
+
+Handles accessibility attributes (aria-invalid, aria-describedby).
+
+#### FormMessage
+
+Displays validation errors:
+
+```typescript
+<FormMessage />
+```
+
+Automatically shows error messages from zod validation.
+
+#### FormDescription (Optional)
+
+Helper text for the field:
+
+```typescript
+<FormDescription>
+  Enter your full legal name
+</FormDescription>
+```
+
+## Validation with Zod
+
+### Basic Schema Types
+
+```typescript
+import { z } from "zod";
+
+const schema = z.object({
+  // Required string
+  name: z.string().min(1, "Name is required"),
+  
+  // Optional string
+  nickname: z.string().optional(),
+  
+  // Email validation
+  email: z.string().email("Invalid email address"),
+  
+  // Number validation
+  age: z.number().min(18, "Must be 18 or older"),
+  
+  // Boolean
+  agree: z.boolean(),
+  
+  // Enum
+  role: z.enum(["admin", "user", "guest"]),
+  
+  // Date
+  birthdate: z.date(),
+});
+```
+
+### Custom Validation
+
+Use `.refine()` for custom validation logic:
+
+```typescript
+const schema = z.object({
+  phone: z
+    .string()
+    .trim()
+    .refine(
+      (value) => value === "" || /^[0-9+\-\s]{7,15}$/.test(value),
+      { message: "Enter a valid phone number" }
+    ),
+});
+```
+
+### Conditional Validation
+
+```typescript
+const schema = z.object({
+  email: z
+    .string()
+    .trim()
+    .refine(
+      (value) => value === "" || z.string().email().safeParse(value).success,
+      { message: "Enter a valid email address" }
+    ),
+});
+```
+
+This allows empty strings OR valid emails.
+
+### Reusable Validation
+
+```typescript
+const currencyField = z
+  .string()
+  .trim()
+  .refine(
+    (value) => value === "" || !Number.isNaN(Number(value)),
+    { message: "Enter a valid amount" }
+  );
+
+const schema = z.object({
+  subtotal: currencyField,
+  tax: currencyField,
+  total: currencyField.refine(
+    (value) => value !== "",
+    { message: "Total is required" }
+  ),
+});
+```
+
+## Real-World Examples
+
+### Vendor Form Example
+
+From `components/app/add-vendor-dialog.tsx`:
+
+```typescript
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+
+const vendorSchema = z.object({
+  name: z.string().min(1, "Vendor name is required"),
+  contact_name: z.string().trim().optional(),
+  phone: z
+    .string()
+    .trim()
+    .refine((value) => value === "" || /^[0-9+\-\s]{7,15}$/.test(value), {
+      message: "Enter a valid phone number",
+    }),
+  email: z
+    .string()
+    .trim()
+    .refine(
+      (value) => value === "" || z.string().email().safeParse(value).success,
+      { message: "Enter a valid email address" }
+    ),
+  gst_number: z.string().trim().optional(),
+  address: z.string().optional(),
+});
+
+type VendorFormValues = z.infer<typeof vendorSchema>;
+
+export function AddVendorDialog() {
+  const [open, setOpen] = useState(false);
+  const [isPending, startTransition] = useTransition();
+
+  const form = useForm<VendorFormValues>({
+    resolver: zodResolver(vendorSchema),
+    defaultValues: {
+      name: "",
+      contact_name: "",
+      phone: "",
+      email: "",
+      gst_number: "",
+      address: "",
+    },
+  });
+
+  useEffect(() => {
+    if (!open) {
+      form.reset();
+    }
+  }, [open, form]);
+
+  const onSubmit = (values: VendorFormValues) => {
+    const formData = new FormData();
+    formData.append("name", values.name.trim());
+    if (values.contact_name?.trim()) 
+      formData.append("contact_name", values.contact_name.trim());
+    if (values.phone.trim()) 
+      formData.append("phone", values.phone.trim());
+    if (values.email.trim()) 
+      formData.append("email", values.email.trim());
+    if (values.gst_number?.trim()) 
+      formData.append("gst_number", values.gst_number.trim());
+    if (values.address?.trim()) 
+      formData.append("address", values.address.trim());
+
+    startTransition(async () => {
+      try {
+        await createVendor(formData);
+        toast.success("Vendor created");
+        form.reset();
+        setOpen(false);
+      } catch (error) {
+        toast.error(
+          error instanceof Error ? error.message : "Failed to create vendor"
+        );
+      }
+    });
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button>Add Vendor</Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Add vendor</DialogTitle>
+          <DialogDescription>
+            Capture supplier contact information for purchases.
+          </DialogDescription>
+        </DialogHeader>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Legal / trading name</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Shree Fabrics Co." {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <div className="grid gap-4 sm:grid-cols-2">
+              <FormField
+                control={form.control}
+                name="phone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Phone</FormLabel>
+                    <FormControl>
+                      <Input placeholder="+91 98765 43210" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input type="email" placeholder="hello@vendor.com" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            <DialogFooter>
+              <Button type="submit" disabled={isPending}>
+                {isPending ? "Saving..." : "Save vendor"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+```
+
+### Purchase Form with Select
+
+From `components/app/add-purchase-dialog.tsx`:
+
+```typescript
+const currencyField = z
+  .string()
+  .trim()
+  .refine((value) => value === "" || !Number.isNaN(Number(value)), {
+    message: "Enter a valid amount",
+  });
+
+const purchaseSchema = z.object({
+  vendor_id: z.string().min(1, "Vendor is required"),
+  invoice_number: z.string().optional(),
+  purchase_date: z.string().optional(),
+  subtotal: currencyField,
+  discount_total: currencyField,
+  tax_total: currencyField,
+  total_amount: currencyField.refine((value) => value !== "", {
+    message: "Grand total is required",
+  }),
+  notes: z.string().optional(),
+});
+
+type PurchaseFormValues = z.infer<typeof purchaseSchema>;
+
+// In component:
+<FormField
+  control={form.control}
+  name="vendor_id"
+  render={({ field }) => (
+    <FormItem>
+      <FormLabel>Vendor</FormLabel>
+      <FormControl>
+        <Select
+          value={field.value}
+          onValueChange={field.onChange}
+          disabled={vendors.length === 0}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Select vendor" />
+          </SelectTrigger>
+          <SelectContent>
+            {vendors.map((vendor) => (
+              <SelectItem key={vendor.value} value={vendor.value}>
+                {vendor.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </FormControl>
+      <FormMessage />
+    </FormItem>
+  )}
+/>
+```
+
+### Customer Form with Textarea
+
+From `components/app/add-customer-dialog.tsx`:
+
+```typescript
+const customerSchema = z.object({
+  full_name: z.string().min(1, "Full name is required"),
+  phone: z
+    .string()
+    .trim()
+    .refine((value) => value === "" || /^[0-9+\-\s]{7,15}$/.test(value), {
+      message: "Enter a valid phone number",
+    }),
+  email: z
+    .string()
+    .trim()
+    .refine(
+      (value) => value === "" || z.string().email().safeParse(value).success,
+      { message: "Enter a valid email address" }
+    ),
+  notes: z.string().optional(),
+});
+
+// In form:
+<FormField
+  control={form.control}
+  name="notes"
+  render={({ field }) => (
+    <FormItem>
+      <FormLabel>Notes</FormLabel>
+      <FormControl>
+        <Textarea 
+          placeholder="Alterations, favourite fits, etc." 
+          rows={3} 
+          {...field} 
+        />
+      </FormControl>
+      <FormMessage />
+    </FormItem>
+  )}
+/>
+```
+
+## Form Patterns
+
+### Dialog Forms
+
+Forms in dialogs should reset on close:
+
+```typescript
+const [open, setOpen] = useState(false);
+const form = useForm<FormValues>({ /* ... */ });
+
+useEffect(() => {
+  if (!open) {
+    form.reset();
+  }
+}, [open, form]);
+```
+
+### Server Actions Integration
+
+Convert form values to FormData for server actions:
+
+```typescript
+const onSubmit = (values: FormValues) => {
+  const formData = new FormData();
+  formData.append("name", values.name.trim());
+  
+  // Only append optional fields if they have values
+  if (values.email?.trim()) {
+    formData.append("email", values.email.trim());
+  }
+
+  startTransition(async () => {
+    try {
+      await createItem(formData);
+      toast.success("Item created");
+      form.reset();
+      setOpen(false);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed");
+    }
+  });
+};
+```
+
+### Loading States
+
+Use `useTransition` for pending states:
+
+```typescript
+const [isPending, startTransition] = useTransition();
+
+const onSubmit = (values: FormValues) => {
+  startTransition(async () => {
+    await submitForm(values);
+  });
+};
+
+return (
+  <Button type="submit" disabled={isPending}>
+    {isPending ? "Saving..." : "Save"}
+  </Button>
+);
+```
+
+### Grid Layouts
+
+Use responsive grids for field layouts:
+
+```typescript
+<div className="grid gap-4 sm:grid-cols-2">
+  <FormField name="firstName" {/* ... */} />
+  <FormField name="lastName" {/* ... */} />
+</div>
+```
+
+### Toast Notifications
+
+Use Sonner for form submission feedback:
+
+```typescript
+import { toast } from "sonner";
+
+try {
+  await submitForm(formData);
+  toast.success("Form submitted successfully");
+} catch (error) {
+  toast.error(error instanceof Error ? error.message : "Submission failed");
+}
+```
+
+## Error Handling
+
+### Validation Errors
+
+Zod validation errors automatically appear in `<FormMessage />`:
+
+```typescript
+// Schema with error messages
+const schema = z.object({
+  email: z.string().email("Please enter a valid email address"),
+  age: z.number().min(18, "You must be at least 18 years old"),
+});
+
+// FormMessage automatically displays these errors
+<FormMessage />
+```
+
+### Manual Error Setting
+
+```typescript
+const form = useForm<FormValues>({ /* ... */ });
+
+// Set field error
+form.setError("email", {
+  type: "manual",
+  message: "This email is already registered",
+});
+
+// Set multiple errors
+form.setError("root", {
+  type: "manual",
+  message: "Server error occurred",
+});
+```
+
+### Server Validation Errors
+
+```typescript
+const onSubmit = async (values: FormValues) => {
+  try {
+    const result = await submitForm(values);
+    if (!result.success) {
+      // Map server errors to form fields
+      Object.entries(result.errors).forEach(([field, message]) => {
+        form.setError(field as keyof FormValues, {
+          type: "server",
+          message: message as string,
+        });
+      });
+    }
+  } catch (error) {
+    toast.error("Submission failed");
+  }
+};
+```
+
+## Best Practices
+
+### 1. Type Safety
+
+Always infer types from zod schemas:
+
+```typescript
+const schema = z.object({ /* ... */ });
+type FormValues = z.infer<typeof schema>;
+```
+
+### 2. Trim Strings
+
+Trim whitespace in schemas for consistent validation:
+
+```typescript
+z.string().trim().min(1, "Field is required")
+```
+
+### 3. Default Values
+
+Always provide default values matching your schema:
+
+```typescript
+const form = useForm<FormValues>({
+  resolver: zodResolver(schema),
+  defaultValues: {
+    name: "",
+    email: "",
+    age: 0,
+  },
+});
+```
+
+### 4. Conditional Required Fields
+
+Use `.optional()` for optional fields, validate with `.refine()` for conditional requirements:
+
+```typescript
+const schema = z.object({
+  email: z.string().trim().optional(),
+}).refine(
+  (data) => data.email === "" || z.string().email().safeParse(data.email).success,
+  { message: "Invalid email", path: ["email"] }
+);
+```
+
+### 5. Form Reset
+
+Reset forms after successful submission:
+
+```typescript
+try {
+  await submitForm(formData);
+  form.reset(); // Reset to default values
+  setOpen(false);
+} catch (error) {
+  // Handle error
+}
+```
+
+### 6. Accessibility
+
+The form components automatically handle:
+- ARIA labels and descriptions
+- Error announcements
+- Focus management
+- Keyboard navigation
+
+Always use the provided components to maintain accessibility.
+
+### 7. Performance
+
+react-hook-form minimizes re-renders. For large forms:
+
+```typescript
+const form = useForm<FormValues>({
+  mode: "onBlur", // Validate on blur instead of onChange
+  resolver: zodResolver(schema),
+});
+```
+
+## Testing Forms
+
+```typescript
+import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+
+test("validates required fields", async () => {
+  render(<MyForm />);
+  
+  const submitButton = screen.getByRole("button", { name: /submit/i });
+  await userEvent.click(submitButton);
+  
+  await waitFor(() => {
+    expect(screen.getByText("Name is required")).toBeInTheDocument();
+  });
+});
+
+test("submits valid data", async () => {
+  const onSubmit = jest.fn();
+  render(<MyForm onSubmit={onSubmit} />);
+  
+  await userEvent.type(screen.getByLabelText(/name/i), "John Doe");
+  await userEvent.type(screen.getByLabelText(/email/i), "john@example.com");
+  await userEvent.click(screen.getByRole("button", { name: /submit/i }));
+  
+  await waitFor(() => {
+    expect(onSubmit).toHaveBeenCalledWith({
+      name: "John Doe",
+      email: "john@example.com",
+    });
+  });
+});
+```

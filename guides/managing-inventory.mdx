@@ -1,0 +1,262 @@
+---
+title: Managing Inventory
+description: Complete guide to managing categories, colors, items, and variants in Pramukh Men's Wear
+---
+
+This guide covers the complete inventory management workflow, from setting up categories and colors to creating items with multiple variants.
+
+## Inventory Overview
+
+The inventory system is organized hierarchically:
+
+- **Categories**: Group similar items (e.g., Shirts, Blazers, Trousers)
+- **Colors**: Centralized color palette used across all variants
+- **Items**: Base products in your catalog (e.g., "Premium Cotton Shirt")
+- **Variants**: Specific SKUs with size and color combinations
+
+This structure allows you to manage a large catalog efficiently while maintaining consistency.
+
+## Setting Up Categories
+
+Categories help organize your catalog and define size systems for different product types.
+
+<Steps>
+  <Step title="Navigate to Categories">
+    From the main navigation, go to **Inventory → Categories**.
+    
+    You'll see:
+    - **Total**: Total number of categories
+    - **Page coverage**: Categories displayed on current page
+    - **Recently added**: Latest category creation date
+  </Step>
+
+  <Step title="Create a New Category">
+    Click **"Add category"** and fill in the details:
+    
+    - **Name**: Descriptive name (e.g., "Formal Shirts", "Casual Trousers")
+    - **Size system**: Choose from three options:
+      - `ALPHA`: S, M, L, XL, XXL, etc.
+      - `NUMERIC`: 28, 30, 32, 34, 36, etc.
+      - `FREE_SIZE`: One size fits all
+    - **Description**: Optional notes about the category
+    
+    The size system determines what size labels are appropriate for items in this category.
+  </Step>
+
+  <Step title="Search and Filter">
+    Use the search bar to find categories by:
+    
+    - Name (e.g., "shirt")
+    - Description text
+    
+    Results are paginated with 12 categories per page.
+  </Step>
+
+  <Step title="Edit or Delete Categories">
+    Click the action menu (three dots) next to any category to:
+    
+    - Edit name, size system, or description
+    - Delete the category (only if no items are assigned to it)
+  </Step>
+</Steps>
+
+## Managing Colors
+
+Colors are shared across all products, ensuring consistency in your variant naming.
+
+<Steps>
+  <Step title="Navigate to Colors">
+    From the main navigation, go to **Inventory → Colors**.
+    
+    The dashboard shows:
+    - **Total**: Number of colors in your palette
+    - **Page coverage**: Colors on current page
+    - **Newest swatch**: Most recently added color with preview
+  </Step>
+
+  <Step title="Add a New Color">
+    Click **"Add color"** and provide:
+    
+    - **Name**: Color name (e.g., "Navy Blue", "Charcoal Grey")
+    - **Hex value**: Color code in format `#RRGGBB` (e.g., `#000000` for black)
+    
+    The hex value is used for visual previews throughout the system.
+  </Step>
+
+  <Step title="View Color Preview">
+    Each color in the table shows:
+    
+    - Name
+    - Visual color swatch
+    - Hex value
+    - Creation date
+    
+    This helps you maintain a consistent visual identity.
+  </Step>
+
+  <Step title="Edit or Remove Colors">
+    Use the action menu to:
+    
+    - Update color name or hex value
+    - Delete colors (only if not used in any variant)
+  </Step>
+</Steps>
+
+## Creating Items
+
+Items represent products in your catalog. Each item can have multiple variants (different sizes and colors).
+
+<Steps>
+  <Step title="Navigate to Inventory">
+    Go to **Inventory** from the main navigation.
+    
+    The main inventory page displays all items with:
+    - Item code
+    - Name
+    - Category
+    - List of variants with SKU, size, and price
+  </Step>
+
+  <Step title="Start Creating an Item">
+    Click **"Add item"** in the top-right corner.
+    
+    The form is split into two sections:
+    - Item details (left)
+    - First variant (right)
+  </Step>
+
+  <Step title="Fill Item Details">
+    Provide the base product information:
+    
+    - **Name**: Product name (e.g., "Slim Fit Blazer")
+    - **Code**: Unique identifier (e.g., "BLZ-001")
+    - **Category**: Select from your categories or leave as "Uncategorized"
+    - **Description**: Fabric details, fit notes, care instructions, etc.
+    
+    The code must be unique across all items.
+  </Step>
+
+  <Step title="Add the First Variant">
+    Every item needs at least one variant:
+    
+    - **SKU**: Unique stock-keeping unit (e.g., "PMW-XL-BLK")
+    - **Size label**: Size for this variant (e.g., "XL", "32", "M")
+    - **Color**: Select from your color palette or "No color"
+    - **Cost price**: What you paid to acquire this item
+    - **Sell price**: What customers pay
+    
+    The SKU must be unique across all variants in your entire inventory.
+  </Step>
+
+  <Step title="Save the Item">
+    Click **"Create item"** to save both the item and its first variant.
+    
+    The system redirects you to the item detail page where you can add more variants.
+  </Step>
+</Steps>
+
+## Adding More Variants
+
+Once an item is created, you can add additional size and color combinations.
+
+<Steps>
+  <Step title="Open Item Details">
+    From the inventory list, click **"Manage"** next to the item you want to update.
+  </Step>
+
+  <Step title="Create New Variant">
+    Click **"Add variant"** to create another SKU for this item.
+    
+    Fill in the variant details:
+    - SKU (must be unique)
+    - Size label
+    - Color
+    - Cost price
+    - Sell price
+  </Step>
+
+  <Step title="Manage Existing Variants">
+    On the item detail page, you can:
+    
+    - View all variants with their SKU, size, color, and prices
+    - Edit variant details
+    - Deactivate variants that are no longer available
+    - View stock levels per variant (if stock tracking is enabled)
+  </Step>
+</Steps>
+
+## Best Practices for Inventory Management
+
+### SKU Naming Conventions
+
+Create a consistent SKU format for easy identification:
+
+```
+[BRAND]-[SIZE]-[COLOR]-[ITEM-CODE]
+
+Examples:
+PMW-XL-BLK-BLZ001  (Pramukh, XL, Black, Blazer 001)
+PMW-32-NVY-TRS045  (Pramukh, 32, Navy, Trouser 045)
+PMW-M-WHT-SHT032   (Pramukh, M, White, Shirt 032)
+```
+
+### Category Organization
+
+Group items logically:
+
+- **By product type**: Shirts, Trousers, Blazers, Accessories
+- **By collection**: Summer 2024, Wedding Collection, Casual Wear
+- **By formality**: Formal, Semi-Formal, Casual
+
+Choose a structure that matches how customers shop and how staff think about products.
+
+### Color Management
+
+Maintain a focused color palette:
+
+- Use descriptive names: "Navy Blue" instead of just "Blue"
+- Keep hex values accurate for online catalogs or digital displays
+- Archive colors that are no longer in production
+
+<Accordion title="Can I change a category's size system after creating it?">
+  Yes, you can edit the size system at any time. However, it doesn't automatically update existing item variants.
+  
+  The size system is a guide - you can manually enter any size label on variants regardless of the category's size type.
+</Accordion>
+
+<Accordion title="What happens if I delete a color that's used in variants?">
+  The system prevents deleting colors that are assigned to active variants. You must either:
+  
+  - Remove the color from all variants first, or
+  - Keep the color in your palette
+  
+  This prevents orphaned references and maintains data integrity.
+</Accordion>
+
+<Accordion title="How do I handle seasonal items?">
+  For seasonal inventory:
+  
+  1. Create variants as normal when items arrive
+  2. Mark variants as inactive when the season ends (click "Manage" → find variant → mark inactive)
+  3. Inactive variants don't appear in POS search but remain in historical sales data
+  4. Reactivate them when the item comes back in season
+  
+  This preserves your sales history while keeping the POS interface clean.
+</Accordion>
+
+<Accordion title="Can I import items from a spreadsheet?">
+  The current version requires manual entry through the web interface. This ensures data quality and lets you verify each item as you add it.
+  
+  For large catalogs:
+  
+  1. Set up all categories and colors first
+  2. Add items in batches
+  3. Use consistent naming conventions
+  4. Have one person review entries for consistency
+</Accordion>
+
+## Next Steps
+
+- Learn about [recording purchases](/guides/recording-purchases) to stock your inventory
+- Explore [creating your first sale](/guides/creating-first-sale) to sell items
+- Understand [user roles](/guides/user-roles-permissions) to see who can manage inventory

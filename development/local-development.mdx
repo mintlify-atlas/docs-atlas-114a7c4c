@@ -1,0 +1,191 @@
+---
+title: Local Development Setup
+description: Set up your local development environment for Pramukh Men's Wear
+---
+
+This guide will help you set up a local development environment for Pramukh Men's Wear.
+
+## Prerequisites
+
+Before you begin, ensure you have the following installed:
+
+- **Node.js** (v20 or later)
+- **pnpm** package manager
+- **Supabase CLI** for database management
+- Git for version control
+
+## Setup Process
+
+<Steps>
+  <Step title="Clone the repository">
+    Clone the Pramukh Men's Wear repository to your local machine:
+
+    ```bash
+    git clone <repository-url>
+    cd pramukh-mens-wear
+    ```
+  </Step>
+
+  <Step title="Install dependencies">
+    Install all required dependencies using pnpm:
+
+    ```bash
+    pnpm install
+    ```
+
+    This will install all packages defined in `package.json`, including:
+    - Next.js 16 with React 19
+    - Supabase client libraries
+    - UI components (Radix UI, Tailwind CSS)
+    - Form handling (React Hook Form, Zod)
+  </Step>
+
+  <Step title="Configure environment variables">
+    Copy the `.env` file to `.env.local` and set your Supabase project variables:
+
+    ```bash
+    cp .env .env.local
+    ```
+
+    Update `.env.local` with your Supabase project credentials:
+
+    ```bash
+    NEXT_PUBLIC_SUPABASE_URL=<your_supabase_project_url>
+    NEXT_PUBLIC_SUPABASE_ANON_KEY=<supabase_anon_or_publishable_key>
+    SUPABASE_SERVICE_ROLE_KEY=<supabase_service_role_key>
+    ```
+
+    <Note>
+      The service role key is optional for local development but required to run migrations via the Supabase CLI.
+    </Note>
+  </Step>
+
+  <Step title="Set up the database">
+    Run the initial schema migration using the Supabase CLI:
+
+    ```bash
+    supabase db push
+    ```
+
+    This will create all necessary tables, including:
+    - `branch` - Store locations
+    - `user_profile` - User information and roles
+    - `branch_user` - Branch assignments
+    - `inventory` - Items, categories, variants
+    - `sale`, `payment`, `return` - Transaction tables
+  </Step>
+
+  <Step title="Seed initial data">
+    Create at least one auth user and set up initial data:
+
+    ```bash
+    # Create an auth user
+    supabase auth signups create \
+      --email owner@pramukh.local \
+      --password your-secure-password
+    ```
+
+    After creating the user, copy the returned user ID and run:
+
+    ```bash
+    # Create user profile
+    supabase db query "insert into public.user_profile (id, full_name, role) values ('<copied-auth-user-id>', 'Main Owner', 'owner');"
+
+    # Create main branch
+    supabase db query "insert into public.branch (code, name) values ('main', 'Main Showroom');"
+
+    # Assign user to branch
+    supabase db query "insert into public.branch_user (branch_id, user_id, role) select b.id, u.id, 'owner' from public.branch b join public.user_profile u on u.id = '<copied-auth-user-id>' where b.code = 'main';"
+    ```
+
+    <Note>
+      After this setup, you can log in using the created credentials at `/login`.
+    </Note>
+  </Step>
+
+  <Step title="Start the development server">
+    Run the development server:
+
+    ```bash
+    pnpm dev
+    ```
+
+    The application will be available at [http://localhost:3000](http://localhost:3000).
+
+    <Info>
+      The middleware will automatically redirect unauthenticated users to `/login`.
+    </Info>
+  </Step>
+</Steps>
+
+## Available Scripts
+
+The following scripts are available in `package.json`:
+
+| Script | Command | Description |
+|--------|---------|-------------|
+| `dev` | `pnpm dev` | Start Next.js development server with hot reload |
+| `build` | `pnpm build` | Build the production application |
+| `start` | `pnpm start` | Start the production server |
+| `lint` | `pnpm lint` | Run ESLint to check code quality |
+
+## Project Structure
+
+The application follows Next.js App Router conventions:
+
+```
+.
+├── app/
+│   ├── (app)/           # Authenticated app routes
+│   │   ├── dashboard/   # Dashboard page
+│   │   ├── inventory/   # Inventory management
+│   │   ├── pos/         # Point of sale
+│   │   ├── branches/    # Branch management
+│   │   └── customers/   # Customer management
+│   └── (auth)/          # Authentication routes
+├── components/
+│   ├── ui/              # Reusable UI components (Radix-based)
+│   └── app/             # Application-specific components
+├── lib/
+│   ├── server/          # Server-side utilities
+│   ├── types/           # TypeScript type definitions
+│   └── utils.ts         # Shared utility functions
+├── utils/
+│   └── supabase/        # Supabase client configuration
+├── hooks/               # Custom React hooks
+└── supabase/
+    └── migrations/      # Database schema migrations
+```
+
+## Next Steps
+
+Once your local environment is set up:
+
+1. Review the [coding standards](/development/coding-standards) to understand the codebase conventions
+2. Explore the database schema at `supabase/migrations/0001_initial_schema.sql`
+3. Start building features or fixing bugs
+4. Run `pnpm lint` before committing changes
+
+## Troubleshooting
+
+### Database Connection Issues
+
+If you encounter database connection errors:
+- Verify your Supabase URL and keys in `.env.local`
+- Ensure the Supabase CLI is authenticated
+- Check that migrations have been applied with `supabase db push`
+
+### Port Already in Use
+
+If port 3000 is already in use:
+```bash
+pnpm dev -- -p 3001
+```
+
+### Module Not Found Errors
+
+If you see module resolution errors:
+```bash
+rm -rf node_modules pnpm-lock.yaml
+pnpm install
+```

@@ -1,0 +1,176 @@
+---
+title: Point of Sale
+description: Process quick sales, collect payments, and manage the billing counter
+icon: cash-register
+---
+
+The Point of Sale (POS) interface is your billing counter for processing customer transactions. It streamlines the sale workflow from item selection through payment collection and invoice generation.
+
+## Overview
+
+The POS page provides a complete view of your daily sales activity with real-time metrics and a streamlined interface for creating new transactions. All sales are automatically linked to your active branch.
+
+<Note>
+You must be assigned to a branch before you can raise invoices. If you see "No branch assigned," contact your administrator.
+</Note>
+
+## Daily Sales Metrics
+
+The POS dashboard displays three key performance indicators for the current day:
+
+<CardGroup cols={3}>
+  <Card title="Bills Today" icon="file-invoice">
+    Total number of invoices raised today, with gross billing amount displayed as helper text.
+  </Card>
+  
+  <Card title="Collected Today" icon="hand-holding-dollar">
+    Total payments received today (cash and digital), showing pending dues as helper text.
+  </Card>
+  
+  <Card title="Outstanding" icon="clock">
+    Total unpaid balances across all sales, with total collected amount shown for context.
+  </Card>
+</CardGroup>
+
+## Creating a Sale
+
+The primary action button at the top right of the page is labeled **"START NEW SALE"**. This button launches the billing workflow.
+
+<Tip>
+The "START NEW SALE" button uses uppercase tracking for visual prominence at the billing counter.
+</Tip>
+
+## Active Cart Interface
+
+The main working area is the **Active Cart** card, which provides:
+
+### Cart Features
+
+- **Customer Selection** - Capture customer details for the transaction
+- **Item Selection** - Add products with variants, quantities, and pricing
+- **Payment Capture** - Record payment method and amount
+- **Invoice Generation** - Print or generate digital invoice
+
+### Today's Collection Summary
+
+A highlighted summary box displays "Collected so far today" with:
+
+- Total amount collected
+- Note that this includes both cash and digital payments
+- Displayed in large, prominent text (2xl font size)
+
+### Action Buttons
+
+Two primary buttons control the sale workflow:
+
+1. **Hold Sale** (outline style) - Temporarily save the current cart to process another customer
+2. **Collect Payment** (primary style) - Finalize the sale and record payment
+
+## Recent Sales
+
+The sidebar displays the 10 most recent invoices issued at your branch, showing:
+
+- **Invoice Number** - Uppercase formatted sale number or short UUID
+- **Customer Name** - Customer's full name, or "Walk-in" for unregistered customers
+- **Total Amount** - Sale total in Indian Rupees (₹)
+- **Status** - Either "Due ₹X" for pending payments or "Paid ₹X" for completed transactions
+- **Date** - Sale date in "DD MMM YYYY" format with uppercase tracking
+
+<Note>
+Recent sales are powered by live Supabase data and update automatically with each page load.
+</Note>
+
+### Empty State
+
+When no bills have been raised yet, the recent sales table displays:
+
+> "No bills raised yet. Start a sale to see it appear here."
+
+## Invoice Formatting
+
+Invoices display with specific formatting standards:
+
+- Invoice numbers are converted to **uppercase**
+- If no custom sale number exists, the system uses the first 8 characters of the sale UUID
+- All currency values use Indian Rupee format with comma separators
+
+## Payment Status Tracking
+
+Each sale tracks three amounts:
+
+- **Total Amount** - Full invoice value
+- **Paid Amount** - Payments received
+- **Due Amount** - Remaining balance
+
+The system automatically calculates and displays the appropriate status:
+
+- If `due_amount > 0`, status shows as "Due ₹[amount]"
+- If fully paid, status shows as "Paid ₹[amount]"
+
+## Best Practices
+
+### Efficient Billing
+
+1. **Pre-load Customer Profiles** - Create customer records before peak hours to speed up checkout
+2. **Use Walk-in for Quick Sales** - Skip customer selection for small, one-time purchases
+3. **Monitor Today's Collection** - Keep an eye on the daily collection metric to ensure end-of-day reconciliation is easier
+
+### Payment Management
+
+1. **Record Partial Payments** - For credit sales, record the initial payment accurately
+2. **Track Outstanding Balances** - Review the Outstanding metric regularly to follow up on dues
+3. **Verify Payment Methods** - Ensure the correct payment method (cash vs digital) is selected
+
+### Invoice Organization
+
+1. **Use Sequential Numbers** - Assign sequential sale numbers for easier tracking and compliance
+2. **Review Recent Sales** - Glance at the recent sales panel between transactions to catch any errors
+3. **Print Immediately** - Generate invoices right away while the customer is present
+
+## Common Workflows
+
+### Quick Cash Sale
+
+1. Click **"START NEW SALE"**
+2. Leave customer as "Walk-in" (default)
+3. Add items to cart
+4. Click **"Collect Payment"**
+5. Select payment method (Cash)
+6. Complete and print invoice
+
+### Credit Sale with Known Customer
+
+1. Click **"START NEW SALE"**
+2. Search and select customer from database
+3. Add items to cart
+4. Click **"Collect Payment"**
+5. Enter partial payment amount
+6. System automatically calculates due amount
+7. Complete transaction
+
+### Multiple Simultaneous Sales
+
+1. Start first sale and add items
+2. Click **"Hold Sale"** when interrupted
+3. Start new sale for walk-in customer
+4. Complete walk-in transaction
+5. Return to held sale to continue
+
+## Data Integration
+
+All POS transactions are stored in the `sale` table in Supabase with:
+
+- Automatic branch assignment
+- Timestamp recording
+- Customer linking (if applicable)
+- Full payment tracking
+
+The system queries data with these filters:
+
+- **Today's sales**: `sale_date >= start of today`
+- **Branch filter**: `branch_id = active branch`
+- **Recent limit**: Top 10 ordered by `sale_date` descending
+
+<Tip>
+The POS interface automatically formats all currency using Indian Rupee standards with appropriate decimal precision.
+</Tip>

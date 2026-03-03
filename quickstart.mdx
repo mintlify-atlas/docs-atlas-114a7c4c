@@ -1,80 +1,297 @@
 ---
-title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+title: Quickstart
+description: Get Pramukh Men's Wear running locally in under 10 minutes
 ---
 
-## Get started in three steps
+<Note>
+  This guide will take you from a fresh checkout to a fully functional local development environment with authentication, database, and sample data.
+</Note>
 
-Get your documentation site running locally and make your first customization.
+## Prerequisites
 
-### Step 1: Set up your local environment
+Before you begin, ensure you have the following installed:
+
+- **Node.js 20+** and **pnpm** (package manager)
+- **Supabase CLI** for database migrations ([installation guide](https://supabase.com/docs/guides/cli))
+- **Git** for cloning the repository
+- A **Supabase account** (free tier works perfectly)
+
+<Tip>
+  If you don't have pnpm installed, run: `npm install -g pnpm`
+</Tip>
+
+## Setup steps
+
+<Steps>
+  <Step title="Clone the repository">
+    Clone the Pramukh Men's Wear repository to your local machine:
+    
+    ```bash
+    git clone <repository-url>
+    cd pramukh-mens-wear
+    ```
+  </Step>
+  
+  <Step title="Configure environment variables">
+    Create a `.env.local` file in the project root with your Supabase credentials:
+    
+    ```bash .env.local
+    NEXT_PUBLIC_SUPABASE_URL=<your_supabase_project_url>
+    NEXT_PUBLIC_SUPABASE_ANON_KEY=<supabase_anon_or_publishable_key>
+    SUPABASE_SERVICE_ROLE_KEY=<supabase_service_role_key>
+    ```
+    
+    <Accordion title="Where do I find these values?">
+      1. Go to your [Supabase Dashboard](https://app.supabase.com/)
+      2. Select your project (or create a new one)
+      3. Navigate to **Settings** → **API**
+      4. Copy the **Project URL** for `NEXT_PUBLIC_SUPABASE_URL`
+      5. Copy the **anon/public** key for `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+      6. Copy the **service_role** key for `SUPABASE_SERVICE_ROLE_KEY`
+    </Accordion>
+    
+    <Warning>
+      The `SUPABASE_SERVICE_ROLE_KEY` provides admin access to your database. Never commit this to version control or expose it in client-side code.
+    </Warning>
+  </Step>
+  
+  <Step title="Install dependencies">
+    Install all required packages using pnpm:
+    
+    ```bash
+    pnpm install
+    ```
+    
+    This will install Next.js 16, React 19, Supabase client libraries, Radix UI components, and all other dependencies defined in `package.json`.
+  </Step>
+  
+  <Step title="Initialize the database">
+    Run the initial database migration to create all required tables:
+    
+    ```bash
+    supabase db push
+    ```
+    
+    This executes `supabase/migrations/0001_initial_schema.sql` which creates:
+    
+    - **Enums**: `branch_role`, `size_type`, `payment_method`, `return_kind`
+    - **Core tables**: `branch`, `user_profile`, `branch_user`
+    - **Inventory tables**: `category`, `color`, `item`, `item_variant`
+    - **Vendor tables**: `vendor`, `purchase`, `purchase_item`, `vendor_payment`
+    - **Customer tables**: `customer`, `sale`, `sale_item`, `customer_payment`
+    - **Return tables**: `return_transaction`, `return_item`, `exchange_item`
+    - **Triggers**: Automatic `updated_at` timestamp updates
+    
+    <Info>
+      The migration uses UUID primary keys, foreign key constraints, and proper indexing for optimal performance.
+    </Info>
+  </Step>
+  
+  <Step title="Create the first user">
+    Create an authentication user and link it to a user profile:
+    
+    ```bash
+    supabase auth signups create \
+      --email owner@pramukh.local \
+      --password YourSecurePassword123
+    ```
+    
+    Copy the returned user ID (it will look like `a1b2c3d4-e5f6-7890-ab12-cd34ef567890`) and use it in the next commands.
+    
+    <Warning>
+      Replace `YourSecurePassword123` with a strong password. This is your admin account.
+    </Warning>
+  </Step>
+  
+  <Step title="Seed user profile and branch">
+    Create a user profile, branch, and associate the user with owner role:
+    
+    ```bash
+    # Create user profile (replace <USER_ID> with the ID from previous step)
+    supabase db query "insert into public.user_profile (id, full_name, role) values ('<USER_ID>', 'Main Owner', 'owner');"
+    
+    # Create the main branch
+    supabase db query "insert into public.branch (code, name) values ('main', 'Main Showroom');"
+    
+    # Assign user to branch as owner
+    supabase db query "insert into public.branch_user (branch_id, user_id, role) select b.id, u.id, 'owner' from public.branch b join public.user_profile u on u.id = '<USER_ID>' where b.code = 'main';"
+    ```
+    
+    <Accordion title="What do these commands do?">
+      1. **User profile**: Links the Supabase auth user to the application's user management system
+      2. **Branch**: Creates your first retail location with code `main`
+      3. **Branch assignment**: Gives the user `owner` role at the `main` branch
+    </Accordion>
+  </Step>
+  
+  <Step title="Start the development server">
+    Launch the Next.js development server:
+    
+    ```bash
+    pnpm dev
+    ```
+    
+    The application will start on [http://localhost:3000](http://localhost:3000).
+  </Step>
+  
+  <Step title="Log in to the system">
+    Open your browser and navigate to [http://localhost:3000](http://localhost:3000). You'll be automatically redirected to `/login` due to the authentication middleware.
+    
+    **Login credentials:**
+    - **Email**: `owner@pramukh.local`
+    - **Password**: The password you set in Step 5
+    
+    Upon successful login, you'll be redirected to the `/dashboard` with full access to all features.
+    
+    <Check>
+      You should see the dashboard with summary cards showing 0 sales, 0 revenue, 0 customers, etc. This is expected for a fresh installation.
+    </Check>
+  </Step>
+</Steps>
+
+## What's next?
+
+Now that you have a running system, explore the key features:
+
+<CardGroup cols={2}>
+  <Card title="Create inventory categories" icon="tags">
+    Navigate to **Inventory** → **Categories** and create product categories like "Shirts", "Trousers", "Blazers". Set the size type (alpha for S/M/L, numeric for 32/34/36, or free size).
+  </Card>
+  
+  <Card title="Add colors" icon="palette">
+    Go to **Inventory** → **Colors** and add your color palette (Black, White, Navy, etc.) with optional hex values for visual reference.
+  </Card>
+  
+  <Card title="Create products" icon="shirt">
+    In **Inventory** → **Items**, create products with item codes and names. Then add variants with specific sizes, colors, and pricing.
+  </Card>
+  
+  <Card title="Set up vendors" icon="truck">
+    Visit **Vendors** to add your suppliers with contact details, phone numbers, and GST information for purchase tracking.
+  </Card>
+</CardGroup>
+
+## Middleware & authentication
+
+The system uses Next.js middleware to protect routes. Here's how it works:
+
+```typescript middleware.ts
+import { type NextRequest } from 'next/server'
+import { updateSession } from '@/utils/supabase/middleware'
+
+export async function middleware(request: NextRequest) {
+  return await updateSession(request)
+}
+
+export const config = {
+  matcher: [
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+  ],
+}
+```
+
+<Info>
+  The middleware runs on every request except static assets and images. Unauthenticated users are automatically redirected to `/login`.
+</Info>
+
+## Database query examples
+
+Once you have data in the system, you can query it using the Supabase client:
+
+```typescript
+import { createClient } from '@/utils/supabase/server'
+
+// Get all sales for a branch
+const supabase = await createClient()
+const { data: sales } = await supabase
+  .from('sale')
+  .select('*, customer:customer_id(full_name)')
+  .eq('branch_id', branchId)
+  .order('sale_date', { ascending: false })
+
+// Get inventory items with variants
+const { data: items } = await supabase
+  .from('item')
+  .select(`
+    *,
+    category:category_id(name),
+    variants:item_variant(
+      *,
+      color:color_id(name, hex_value)
+    )
+  `)
+```
+
+## Common issues
 
 <AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
+  <Accordion title="Error: supabase command not found">
+    Install the Supabase CLI:
     
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
+    ```bash
+    # macOS
+    brew install supabase/tap/supabase
+    
+    # Windows
+    scoop install supabase
+    
+    # Linux
+    brew install supabase/tap/supabase
+    ```
+    
+    Verify installation with: `supabase --version`
   </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
-    
-    <Tip>Your preview updates automatically as you edit files.</Tip>
+  
+  <Accordion title="Error: Failed to connect to Supabase">
+    1. Verify your `.env.local` file has the correct credentials
+    2. Check that your Supabase project is active (not paused)
+    3. Ensure you're using the **Project URL** (not the API URL)
+    4. Confirm the **anon key** matches your project's public key
+  </Accordion>
+  
+  <Accordion title="Error: oldString not found when creating user profile">
+    This usually means:
+    1. The user ID was not copied correctly (check for extra spaces)
+    2. The auth user wasn't created successfully (try the signup command again)
+    3. Quote the UUID properly in the SQL command
+  </Accordion>
+  
+  <Accordion title="Redirected to login immediately after logging in">
+    This indicates a session issue:
+    1. Clear your browser cookies for `localhost:3000`
+    2. Ensure cookies are enabled in your browser
+    3. Check browser console for CORS errors
+    4. Verify the `NEXT_PUBLIC_SUPABASE_URL` doesn't have a trailing slash
   </Accordion>
 </AccordionGroup>
 
-### Step 2: Deploy your changes
+## Development tips
 
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
-    
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
+<Tip>
+  Use the Supabase Studio (accessible from your project dashboard) to visually browse tables, run SQL queries, and manage data during development.
+</Tip>
 
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
+**Hot reload**: Next.js automatically reloads when you edit files. No need to restart the dev server.
 
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
+**TypeScript types**: The project uses strict TypeScript. Check `tsconfig.json` for configuration.
 
-### Step 3: Go live
+**Database changes**: When modifying the schema:
+1. Edit or create a new migration file in `supabase/migrations/`
+2. Run `supabase db push` to apply changes
+3. Update TypeScript types if needed
 
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
+**Environment variables**: The system differentiates between:
+- `NEXT_PUBLIC_*` - Available in browser (safe for public)
+- Other variables - Server-side only (keep sensitive keys here)
 
 ## Next steps
 
-Now that you have your docs running, explore these key features:
-
 <CardGroup cols={2}>
-
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
-
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
-
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
-
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
-
+  <Card title="Deployment guide" icon="rocket" href="/deployment">
+    Ready to go live? Learn how to deploy to production with Vercel and Supabase.
+  </Card>
+  
+  <Card title="Database schema" icon="database" href="/setup/database-schema">
+    Understand the complete database structure, relationships, and constraints.
+  </Card>
 </CardGroup>
-
-<Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
-</Note>

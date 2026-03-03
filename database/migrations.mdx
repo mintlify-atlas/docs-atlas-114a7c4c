@@ -1,0 +1,245 @@
+---
+title: Database Migrations
+description: Managing database schema changes with Supabase migrations
+---
+
+## Overview
+
+Pramukh Men's Wear uses Supabase migrations to manage database schema changes. All migration files are stored in `supabase/migrations/` and are applied using the Supabase CLI.
+
+## Existing Migrations
+
+The project currently has two migrations:
+
+### 0001_initial_schema.sql
+
+This is the foundational schema migration that creates:
+
+**Extensions:**
+- `pgcrypto` - For UUID generation and cryptographic functions
+
+**Enumerated Types:**
+- `branch_role` - User roles: `owner`, `manager`, `cashier`
+- `size_type` - Size formats: `alpha`, `numeric`, `free_size`
+- `payment_method` - Payment types: `cash`, `upi`, `card`, `other`
+- `return_kind` - Transaction types: `return`, `exchange`
+
+**Tables:**
+- `branch` - Store/branch locations
+- `user_profile` - User profiles linked to Supabase auth.users
+- `branch_user` - User assignments per branch
+- `category` - Product categories with size types
+- `color` - Color definitions with hex values
+- `item` - Product items
+- `item_variant` - Item variants (SKU, size, color)
+- `vendor` - Supplier information
+- `purchase` - Purchase orders
+- `purchase_item` - Purchase order line items
+- `vendor_payment` - Vendor payment records
+- `customer` - Customer information
+- `sale` - Sales transactions
+- `sale_item` - Sale line items
+- `customer_payment` - Customer payment records
+- `return_transaction` - Return/exchange transactions
+- `return_item` - Items being returned
+- `exchange_item` - Items being exchanged
+
+**Functions & Triggers:**
+- `set_updated_at()` - Automatically updates `updated_at` timestamp on record updates
+- Triggers on all relevant tables to maintain `updated_at` fields
+
+### 0002_seed_initial_data.sql
+
+Seeds the database with initial data:
+
+```sql
+-- Creates default owner profile
+insert into public.user_profile (id, full_name, role, phone)
+values (
+  'fa7a02e7-b219-4f83-889d-049adf49267e',
+  'Main Owner',
+  'owner',
+  null
+)
+on conflict (id) do update
+set full_name = excluded.full_name,
+    role = excluded.role;
+
+-- Creates default branch
+insert into public.branch (code, name, address)
+values ('main', 'Main Showroom', null)
+on conflict (code) do update
+set name = excluded.name,
+    address = excluded.address;
+
+-- Assigns owner to branch
+insert into public.branch_user (branch_id, user_id, role)
+select b.id, u.id, 'owner'
+from public.branch b
+join public.user_profile u on u.id = 'fa7a02e7-b219-4f83-889d-049adf49267e'
+where b.code = 'main'
+  and not exists (
+    select 1
+    from public.branch_user bu
+    where bu.branch_id = b.id
+      and bu.user_id = u.id
+  );
+```
+
+## Running Migrations
+
+### Prerequisites
+
+1. Install the Supabase CLI:
+   ```bash
+   npm install -g supabase
+   ```
+
+2. Set up your environment variables in `.env.local`:
+   ```bash
+   NEXT_PUBLIC_SUPABASE_URL=<your_supabase_project_url>
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=<supabase_anon_or_publishable_key>
+   SUPABASE_SERVICE_ROLE_KEY=<supabase_service_role_key>
+   ```
+
+### Apply Migrations
+
+To apply all pending migrations to your Supabase database:
+
+```bash
+supabase db push
+```
+
+This command:
+- Connects to your Supabase project
+- Applies all migration files in order
+- Creates or updates the database schema
+
+### Create a New Migration
+
+When you need to make schema changes:
+
+1. Create a new migration file:
+   ```bash
+   supabase migration new <migration_name>
+   ```
+
+2. Edit the generated file in `supabase/migrations/`
+
+3. Apply the migration:
+   ```bash
+   supabase db push
+   ```
+
+### Check Migration Status
+
+To see which migrations have been applied:
+
+```bash
+supabase migration list
+```
+
+## Migration Workflow
+
+### Development Process
+
+1. **Make Schema Changes**
+   - Create a new migration file with descriptive name
+   - Write SQL DDL statements (CREATE, ALTER, DROP)
+   - Include rollback instructions in comments if needed
+
+2. **Test Locally**
+   - Apply migration to local database
+   - Test the changes thoroughly
+   - Verify data integrity
+
+3. **Version Control**
+   - Commit migration files to git
+   - Never modify existing migration files that have been applied
+
+4. **Deploy to Production**
+   - Apply migrations to staging environment first
+   - Test thoroughly
+   - Apply to production using `supabase db push`
+
+### Best Practices
+
+- **Sequential Naming**: Use numbered prefixes (0001, 0002, etc.) to maintain order
+- **Descriptive Names**: Use clear names like `0003_add_inventory_tracking.sql`
+- **Atomic Changes**: Keep migrations focused on a single logical change
+- **Backward Compatible**: When possible, make changes that don't break existing code
+- **Test Data**: Include seed data in separate migration files
+- **Documentation**: Add comments explaining complex changes
+
+## Common Operations
+
+### Adding a New Table
+
+```sql
+create table public.new_table (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  created_at timestamptz not null default timezone('utc', now()),
+  updated_at timestamptz not null default timezone('utc', now())
+);
+
+-- Add updated_at trigger
+create trigger set_timestamp_new_table
+before update on public.new_table
+for each row
+execute procedure public.set_updated_at();
+```
+
+### Adding a Column
+
+```sql
+alter table public.item
+add column barcode text;
+
+create index item_barcode_idx on public.item (barcode);
+```
+
+### Creating an Index
+
+```sql
+create index sale_date_idx on public.sale (sale_date);
+create index sale_branch_date_idx on public.sale (branch_id, sale_date);
+```
+
+### Adding a Foreign Key
+
+```sql
+alter table public.item
+add constraint item_brand_id_fkey
+foreign key (brand_id)
+references public.brand(id)
+on delete set null;
+```
+
+## Troubleshooting
+
+### Migration Failed
+
+If a migration fails:
+
+1. Check the error message for specific issues
+2. Fix the SQL in the migration file
+3. If the migration was partially applied, you may need to manually rollback changes
+4. Re-run `supabase db push`
+
+### Reset Database
+
+<Warning>
+  This will delete all data. Only use in development.
+</Warning>
+
+```bash
+supabase db reset
+```
+
+This drops and recreates the database, then applies all migrations from scratch.
+
+## Related
+
+- [Row Level Security](/database/row-level-security)
+- [Schema Overview](/database/overview)

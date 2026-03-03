@@ -1,0 +1,135 @@
+---
+title: Database Overview
+description: Architecture and design of the Pramukh Men's Wear database schema
+icon: database
+---
+
+## Architecture
+
+The Pramukh Men's Wear system uses **PostgreSQL** (via Supabase) as its primary database. The schema is designed to support multi-branch retail operations with comprehensive inventory, sales, and purchase management.
+
+## Core Modules
+
+The database is organized into five main functional areas:
+
+<CardGroup cols={2}>
+  <Card title="Branches & Users" icon="users" href="/database/branches-users">
+    Branch management, user profiles, and role-based access control
+  </Card>
+  <Card title="Inventory" icon="boxes-stacked" href="/database/inventory">
+    Items, variants, categories, colors, and stock tracking
+  </Card>
+  <Card title="Sales & Customers" icon="receipt" href="/database/sales-customers">
+    Sales transactions, customer records, and payment tracking
+  </Card>
+  <Card title="Purchases & Vendors" icon="truck" href="/database/purchases-vendors">
+    Purchase orders, vendor management, and vendor payments
+  </Card>
+</CardGroup>
+
+## Extensions
+
+The schema uses the following PostgreSQL extensions:
+
+<ParamField path="pgcrypto" type="extension">
+  Cryptographic functions, primarily used for UUID generation with `gen_random_uuid()`
+</ParamField>
+
+## Enumerated Types
+
+The schema defines several custom enum types for type safety:
+
+```sql
+create type public.branch_role as enum ('owner', 'manager', 'cashier');
+create type public.size_type as enum ('alpha', 'numeric', 'free_size');
+create type public.payment_method as enum ('cash', 'upi', 'card', 'other');
+create type public.return_kind as enum ('return', 'exchange');
+```
+
+### branch_role
+Defines user roles within a branch:
+- `owner` - Full access to all operations
+- `manager` - Branch management capabilities
+- `cashier` - Point-of-sale operations
+
+### size_type
+Specifies how product sizes are labeled:
+- `alpha` - Alphabetic sizes (S, M, L, XL, etc.)
+- `numeric` - Numeric sizes (28, 30, 32, etc.)
+- `free_size` - One-size-fits-all products
+
+### payment_method
+Payment methods accepted:
+- `cash` - Cash payments
+- `upi` - UPI/digital payments
+- `card` - Credit/debit card payments
+- `other` - Other payment methods
+
+### return_kind
+Types of return transactions:
+- `return` - Full refund
+- `exchange` - Exchange for different items
+
+## Common Patterns
+
+### Primary Keys
+All tables use UUID primary keys generated via `gen_random_uuid()`:
+
+```sql
+id uuid primary key default gen_random_uuid()
+```
+
+### Timestamps
+Most tables include automatic timestamp tracking:
+
+```sql
+created_at timestamptz not null default timezone('utc', now())
+updated_at timestamptz not null default timezone('utc', now())
+```
+
+An automatic trigger updates `updated_at` on record modification:
+
+```sql
+create trigger set_timestamp
+before update on public.branch
+for each row
+execute procedure public.set_updated_at();
+```
+
+### Soft References
+Critical relationships use `on delete restrict` to prevent accidental data loss, while non-critical relationships use `on delete set null` or `on delete cascade`.
+
+## Data Integrity
+
+### Constraints
+- Unique constraints on business identifiers (codes, SKUs, invoice numbers)
+- Check constraints on numeric values (quantities > 0, amounts >= 0)
+- Foreign key constraints with appropriate delete behaviors
+
+### Indexes
+- Composite unique indexes for business rules
+- Performance indexes on foreign keys
+- Conditional unique indexes for optional fields
+
+## Migration Files
+
+The schema is managed through Supabase migrations:
+
+<CodeGroup>
+```bash 0001_initial_schema.sql
+-- Creates all tables, types, indexes, and triggers
+```
+
+```bash 0002_seed_initial_data.sql
+-- Seeds initial owner user and main branch
+```
+</CodeGroup>
+
+## Schema Navigation
+
+Explore each module in detail:
+
+- [Branches & Users](/database/branches-users) - Branch and user management
+- [Inventory](/database/inventory) - Product catalog and variants
+- [Sales & Customers](/database/sales-customers) - Sales transactions and customers
+- [Purchases & Vendors](/database/purchases-vendors) - Purchase orders and vendors

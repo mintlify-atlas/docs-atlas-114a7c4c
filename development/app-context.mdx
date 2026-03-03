@@ -1,0 +1,282 @@
+---
+title: 'App Context'
+description: 'Server-side application context for user authentication and branch management'
+---
+
+## Overview
+
+The app context pattern provides a centralized way to access authenticated user information and active branch data throughout the application. It's implemented as a server-side utility that enforces authentication and loads necessary context data.
+
+## Core Function
+
+The `getAppContext()` function is defined in `lib/server/app-context.ts:26` and is the primary entry point for loading application context.
+
+### Type Definitions
+
+```typescript
+export type BranchSummary = {
+  id: string;
+  code: string;
+  name: string;
+};
+
+export type AppContext = {
+  user: {
+    id: string;
+    email?: string;
+    phone?: string;
+  };
+  profile: {
+    full_name: string | null;
+    role: string;
+  } | null;
+  branches: BranchSummary[];
+  activeBranch: BranchSummary | null;
+};
+```
+
+### Implementation
+
+```typescript
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+import { createClient } from "@/utils/supabase/server";
+
+export async function getAppContext(): Promise<AppContext> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
+  const cookieStore = await cookies();
+  const activeBranchCookie = cookieStore.get("pmw.active_branch")?.value;
+
+  const [profileRes, branchesRes] = await Promise.all([
+    supabase
+      .from("user_profile")
+      .select("full_name, role")
+      .eq("id", user.id)
+      .maybeSingle(),
+    supabase
+      .from("branch_user")
+      .select("branch:branch_id (id, code, name)")
+      .eq("user_id", user.id)
+      .returns<{ branch: BranchSummary | null }[]>(),
+  ]);
+
+  if (profileRes.error) {
+    console.error(profileRes.error);
+  }
+  if (branchesRes.error) {
+    console.error(branchesRes.error);
+  }
+
+  const branches: BranchSummary[] = (branchesRes.data ?? [])
+    .map((row) => row.branch)
+    .filter((branch): branch is BranchSummary => branch !== null);
+
+  const activeBranch =
+    branches.find((branch) => branch.id === activeBranchCookie) ?? branches[0] ?? null;
+
+  return {
+    user: {
+      id: user.id,
+      email: user.email ?? undefined,
+      phone: user.phone ?? undefined,
+    },
+    profile: profileRes.data ?? null,
+    branches,
+    activeBranch,
+  };
+}
+```
+
+## Key Features
+
+### 1. Authentication Enforcement
+
+The function checks if a user is authenticated. If not, it redirects to login:
+
+```typescript
+if (!user) {
+  redirect("/login");
+}
+```
+
+This makes `getAppContext()` a guard that ensures only authenticated users can access protected routes.
+
+### 2. Parallel Data Loading
+
+User profile and branches are fetched in parallel using `Promise.all()` for optimal performance:
+
+```typescript
+const [profileRes, branchesRes] = await Promise.all([
+  supabase.from("user_profile")...,
+  supabase.from("branch_user")...,
+]);
+```
+
+### 3. Branch Switching
+
+The active branch is determined by:
+
+1. Reading the `pmw.active_branch` cookie
+2. Finding the branch with matching ID
+3. Falling back to the first available branch
+4. Returning `null` if no branches exist
+
+```typescript
+const activeBranchCookie = cookieStore.get("pmw.active_branch")?.value;
+
+const activeBranch =
+  branches.find((branch) => branch.id === activeBranchCookie) ?? branches[0] ?? null;
+```
+
+### 4. Error Handling
+
+Database errors are logged but don't prevent the context from being returned:
+
+```typescript
+if (profileRes.error) {
+  console.error(profileRes.error);
+}
+```
+
+This allows the app to function even if optional data fails to load.
+
+## Usage in Layouts
+
+The app context is typically loaded in the root authenticated layout (`app/(app)/layout.tsx:39`):
+
+```typescript
+export default async function AppLayout({ children }: { children: ReactNode }) {
+  const { user, profile, branches, activeBranch } = await getAppContext();
+  
+  return (
+    <SidebarProvider defaultOpen={sidebarState}>
+      <Sidebar>
+        <SidebarHeader>
+          <BranchSwitcher branches={branches} activeBranchId={activeBranch?.id ?? null} />
+        </SidebarHeader>
+        {/* ... */}
+      </Sidebar>
+      
+      <SidebarInset>
+        <header>
+          <div>
+            <p>{activeBranch ? activeBranch.name : "No branch"}</p>
+            <p>{branches.length} branch{branches.length === 1 ? "" : "es"}</p>
+          </div>
+          <div>
+            <p>Signed in as</p>
+            <p>{profile?.full_name ?? user.email ?? user.phone ?? "Unknown"}</p>
+          </div>
+        </header>
+        
+        <main>{children}</main>
+      </SidebarInset>
+    </SidebarProvider>
+  );
+}
+```
+
+## Usage in Server Actions
+
+Server actions can call `getAppContext()` to access the active branch:
+
+```typescript
+"use server";
+
+import { getAppContext } from "@/lib/server/app-context";
+import { createClient } from "@/utils/supabase/server";
+
+export async function createItem(formData: FormData) {
+  const { activeBranch } = await getAppContext();
+  if (!activeBranch) {
+    throw new Error("Cannot create item without an active branch");
+  }
+
+  const supabase = await createClient();
+  // Use activeBranch.id for branch-specific operations
+}
+```
+
+Example from `app/(app)/inventory/actions.ts:177-181`.
+
+## Branch Switching
+
+To switch branches, use the `setActiveBranch()` server action from `app/(app)/actions.ts:15`:
+
+```typescript
+"use server";
+
+import { cookies } from "next/headers";
+import { revalidatePath } from "next/cache";
+
+export async function setActiveBranch(branchId: string | null) {
+  const cookieStore = await cookies();
+
+  if (branchId) {
+    cookieStore.set("pmw.active_branch", branchId, {
+      path: "/",
+      maxAge: 60 * 60 * 24 * 30, // 30 days
+      sameSite: "lax",
+    });
+  } else {
+    cookieStore.delete("pmw.active_branch");
+  }
+
+  // Revalidate all branch-dependent pages
+  const paths = ["/dashboard", "/pos", "/inventory", "/customers", "/vendors", "/purchases"];
+  paths.forEach((path) => revalidatePath(path));
+}
+```
+
+### Branch Switcher Component
+
+The branch switcher uses this action to update the active branch:
+
+```typescript
+import { setActiveBranch } from "@/app/(app)/actions";
+
+function BranchSwitcher({ branches, activeBranchId }) {
+  async function handleChange(branchId: string) {
+    await setActiveBranch(branchId);
+  }
+  
+  // Render select dropdown
+}
+```
+
+## Performance Considerations
+
+### Caching
+
+The context is fetched on each server component render. Next.js automatically deduplicates identical requests within the same render pass, so multiple components can safely call `getAppContext()` without performance penalties.
+
+### Revalidation
+
+When the active branch changes, affected pages are revalidated using `revalidatePath()` to ensure fresh data.
+
+## Security
+
+- The function only runs on the server (uses `cookies()` and server Supabase client)
+- Authentication is enforced by redirecting unauthenticated users
+- Users can only access branches they're assigned to through `branch_user` table
+- The cookie is HttpOnly and secure by default in production
+
+## Best Practices
+
+1. **Call in layouts**: Load context once in the layout and pass data to child components
+2. **Check activeBranch**: Always verify `activeBranch` is not `null` before using it
+3. **Type safety**: Use the exported `AppContext` and `BranchSummary` types
+4. **Error handling**: Handle cases where profile or branches might be empty
+
+## Related
+
+- [Project Structure](/development/project-structure) - Codebase organization
+- [Server Actions](/development/server-actions) - Using context in server actions

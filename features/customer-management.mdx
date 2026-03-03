@@ -1,0 +1,242 @@
+---
+title: Customer Management
+description: Track customer profiles, purchase history, and outstanding balances
+icon: address-book
+---
+
+The Customer Management system maintains detailed customer profiles, tracks spending patterns, and monitors outstanding dues across all transactions.
+
+## Overview
+
+Customer records are organization-wide (shared across branches) but sales data is filtered by your active branch. The system provides search, pagination, and detailed analytics for customer relationship management.
+
+<Note>
+You must be assigned to a branch before managing customers. Without branch assignment, you'll see "No branch assigned" with instructions to contact your administrator.
+</Note>
+
+## Page Header and Actions
+
+The customer directory header displays:
+
+- Page title: "Customer directory"
+- Description: "Track dues and loyalty for [branch name] shoppers"
+- Search bar with placeholder: "Search name or phone"
+- **"Search"** button to execute the query
+- **"Reset"** button (appears only when a search is active)
+- Add customer button (opens dialog)
+
+## Key Metrics
+
+Three summary cards provide instant insights into the current page of customers:
+
+<CardGroup cols={3}>
+  <Card title="Customers" icon="users">
+    Total count of all customer profiles in your database, synced from Supabase.
+  </Card>
+  
+  <Card title="Page Spend" icon="indian-rupee-sign">
+    Total revenue attributed to customers displayed on the current page.
+  </Card>
+  
+  <Card title="Page Outstanding" icon="exclamation-circle">
+    Sum of pending balances for customers on the current page. Use this to prioritize follow-ups.
+  </Card>
+</CardGroup>
+
+## Search Functionality
+
+The search feature supports filtering customers by:
+
+- **Full name** (case-insensitive partial match)
+- **Phone number** (case-insensitive partial match)
+
+Search uses the ILIKE SQL operator with wildcard matching, so searching "John" will find "John Smith", "Johnny Doe", etc.
+
+<Tip>
+Search results are case-insensitive and support partial matches, making it easy to find customers even if you only remember part of their name or phone number.
+</Tip>
+
+## Customer Table
+
+The Top Customers table displays up to 12 customers sorted by total spend in descending order:
+
+### Columns
+
+- **Name** - Customer's full name in medium font weight
+- **Phone** - Phone number, or "—" if not provided
+- **Total Spend** - Lifetime revenue from this customer in Indian Rupees
+- **Outstanding** - Current unpaid balance, or "—" if fully paid
+- **Last Visit** - Date of most recent sale in "DD MMM YYYY" format, or "Never" if no sales
+
+### Empty State
+
+When no customers are linked to sales:
+
+> "No customers linked to sales yet. Complete a sale with a saved customer to see insights here."
+
+## Pagination
+
+The customer directory displays 10 customers per page with full pagination controls:
+
+- **Previous** button (disabled on first page)
+- **Page numbers** (with ellipsis for large page counts)
+- **Next** button (disabled on last page)
+
+Pagination range calculation:
+
+- Always shows first and last page numbers
+- Shows current page ±1 page
+- Uses ellipsis when gaps exist
+- Maximum of 7 visible page indicators
+
+<Note>
+Pagination state is preserved when searching - your search query carries through page navigation.
+</Note>
+
+## Adding Customers
+
+Click the add customer button to open the **Add Customer Dialog** where you can enter:
+
+- Full name (required)
+- Phone number
+- Email address
+- Notes (for special preferences or tailoring details)
+
+## Customer Analytics
+
+For each customer, the system automatically calculates:
+
+### Financial Metrics
+
+- **Total Spend** - Sum of all `total_amount` from sales
+- **Paid** - Sum of all `paid_amount` collected
+- **Due** - Sum of all `due_amount` still outstanding
+
+### Activity Tracking
+
+- **Last Sale Date** - Most recent `sale_date` from transactions
+- **Sales History** - All transactions linked to the customer
+
+## Customer Notes
+
+A dedicated "Customer Notes" card is available for future enhancement:
+
+> "Use this area to surface tailoring reminders or special preferences once the notes module is implemented."
+
+The notes feature will allow you to store:
+
+- Tailoring measurements
+- Style preferences
+- Special requests
+- Delivery addresses
+
+## Best Practices
+
+### Data Collection
+
+1. **Capture Phone Numbers** - Always collect phone numbers for SMS communication and search efficiency
+2. **Verify Before Saving** - Double-check phone numbers and names for accuracy
+3. **Use Consistent Formatting** - Enter names in proper title case (John Smith, not JOHN SMITH)
+4. **Add Notes Proactively** - Document customer preferences during the sale
+
+### Outstanding Management
+
+1. **Daily Review** - Check the Page Outstanding metric each morning
+2. **Sort by Dues** - Prioritize customers with highest outstanding balances
+3. **Follow Up Promptly** - Contact customers with pending payments within 3-5 days
+4. **Record Payments Immediately** - Update payment records as soon as dues are collected
+
+### Search Efficiency
+
+1. **Use Partial Names** - Search with first name only if unsure of full name
+2. **Try Phone Search** - Phone numbers are often easier to remember than names
+3. **Check Spelling** - If search fails, try alternate spellings
+4. **Reset Filters** - Use the Reset button to clear search and see all customers
+
+### Loyalty Building
+
+1. **Track Total Spend** - Identify top customers for special offers
+2. **Monitor Visit Frequency** - Note customers who haven't visited recently
+3. **Personalize Service** - Review customer notes before they arrive
+4. **Recognize Milestones** - Celebrate spending milestones or anniversaries
+
+## Data Integration
+
+### Customer Table Schema
+
+- `id` - Unique customer identifier
+- `full_name` - Customer's name
+- `phone` - Contact phone number
+- `email` - Email address
+- `notes` - Free-text notes field
+- `created_at` - Account creation timestamp
+
+### Sales Relationship
+
+Customers are linked to sales via `customer_id` foreign key. The system:
+
+1. Fetches all customers (paginated)
+2. Retrieves all sales for those customers filtered by active branch
+3. Aggregates totals, payments, and dues
+4. Calculates last sale date
+5. Joins data for display
+
+<Tip>
+The system automatically handles customers with no sales history, displaying zeros and "Never" for last visit.
+</Tip>
+
+## Common Workflows
+
+### Adding a New Customer
+
+1. Click add customer button in top right
+2. Enter full name (required)
+3. Enter phone number
+4. Add any notes about preferences
+5. Click save
+6. Customer is now available for POS selection
+
+### Finding a Customer at POS
+
+1. During sale creation, use customer search
+2. Type partial name or phone number
+3. Select matching customer from results
+4. Customer details auto-populate in sale
+5. Previous transaction history is accessible
+
+### Collecting Outstanding Dues
+
+1. Navigate to Customers page
+2. Review Page Outstanding metric
+3. Sort table by Outstanding column (highest first)
+4. Click on customer with dues
+5. View sale history
+6. Record payment against specific sale
+7. Outstanding automatically recalculates
+
+### Generating Customer Insights
+
+1. Sort by Total Spend to find VIP customers
+2. Sort by Last Visit to find inactive customers
+3. Export top 12 customers list for marketing
+4. Plan re-engagement campaigns for dormant customers
+5. Offer loyalty rewards to high spenders
+
+## Multi-Branch Considerations
+
+While customer profiles are organization-wide:
+
+- **Sales data** is filtered by your active branch
+- **Total spend** only includes purchases from your branch
+- **Outstanding** only shows dues from your branch sales
+- **Last visit** is the most recent sale at your branch
+
+If a customer visits multiple branches:
+
+- Profile is shared and updated across branches
+- Each branch sees only their own sales data
+- Organization owner can view consolidated data
+
+<Note>
+This design allows customers to shop at any location while maintaining data privacy between branches.
+</Note>

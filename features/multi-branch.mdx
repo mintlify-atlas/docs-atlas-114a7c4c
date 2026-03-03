@@ -1,0 +1,332 @@
+---
+title: Multi-Branch Management
+description: Organize operations across multiple retail locations with branch-specific data isolation
+icon: code-branch
+---
+
+The Multi-Branch Management system enables you to operate multiple retail locations with centralized data management and branch-specific operational controls.
+
+## Overview
+
+Branches represent physical retail locations (stores, outlets, showrooms) within your organization. Each branch maintains its own sales, inventory, and purchase records while sharing organization-wide resources like customer profiles and vendor relationships.
+
+## Branch Directory
+
+The branches page provides a complete directory of all retail locations:
+
+### Page Header
+
+- Section label: "ORGANIZATION" (uppercase with extended tracking)
+- Page title: "Branches"
+- Description: "Manage retail locations and their contact information"
+- Search functionality for finding branches
+- Add branch button to create new locations
+
+## Key Metrics
+
+<CardGroup cols={3}>
+  <Card title="Total" icon="building">
+    Number of branches configured across your entire organization.
+  </Card>
+  
+  <Card title="Page Coverage" icon="list">
+    Number of branches shown in the current filtered view (useful when searching).
+  </Card>
+  
+  <Card title="Quick Links" icon="link">
+    Direct navigation to Inventory, Purchases, and POS for quick workflows.
+  </Card>
+</CardGroup>
+
+## Branch Directory Table
+
+All branches display in a comprehensive table with these columns:
+
+- **Code** - Unique branch identifier in uppercase monospace font with extended tracking
+- **Name** - Branch display name in medium font weight
+- **Contact** - Phone and email displayed vertically in muted text
+- **Address** - Physical location address in muted text
+
+All fields show "—" if data is not provided.
+
+### Empty State
+
+When no branches exist:
+
+> "No branches yet. Add a location to start routing transactions."
+
+## Search Functionality
+
+Branch search supports filtering by:
+
+- Branch code
+- Branch name
+- Address
+- Phone number
+- Email address
+
+Search is case-insensitive with partial matching using SQL ILIKE.
+
+<Tip>
+The search field placeholder reads: "Search code, name, or contact" to guide users on searchable fields.
+</Tip>
+
+## Adding Branches
+
+Click the add branch button to open the **Add Branch Dialog** where you can configure:
+
+- Branch code (unique identifier)
+- Branch name
+- Physical address
+- Contact phone number
+- Contact email address
+
+### Branch Code Requirements
+
+- Must be unique across organization
+- Displayed in uppercase
+- Used for reporting and data export
+- Should be short and memorable (e.g., MG-01, DLF-02)
+
+## Pagination
+
+Branch directory displays 10 branches per page with full pagination:
+
+- Previous/Next buttons
+- Page number indicators
+- Ellipsis for large page counts
+- Search state preserved across pages
+
+## Branch Assignment
+
+Users must be assigned to one or more branches to access operational features:
+
+### Assignment Process
+
+1. Organization owner navigates to user management
+2. Selects user profile
+3. Assigns user to specific branches
+4. User gains access to those branch data
+
+### Active Branch Concept
+
+When a user has access to multiple branches:
+
+- One branch is marked as "Active" at any time
+- Dashboard shows "Active: [branch name]" indicator
+- All operational data filters by active branch
+- User can switch active branch from dashboard
+
+<Note>
+The active branch determines which data you see in Dashboard, POS, Inventory, and Purchases sections.
+</Note>
+
+## Data Isolation by Branch
+
+Different data types have different branch scoping:
+
+### Branch-Specific Data
+
+- **Sales** - Each sale belongs to one branch
+- **Purchases** - Procurement records are branch-specific
+- **Inventory Levels** - Stock quantities tracked per branch
+- **Dashboard Metrics** - Filtered by active branch
+
+### Organization-Wide Data
+
+- **Customers** - Shared across all branches
+- **Vendors** - Supplier profiles available to all branches
+- **Item Catalog** - Product definitions shared organization-wide
+- **Categories & Colors** - Reference data shared globally
+
+### Why This Design?
+
+This hybrid approach allows:
+
+- Customers to shop at any branch with same profile
+- Centralized vendor management for negotiation power
+- Consistent product catalog across locations
+- Privacy between branch operations
+- Consolidated reporting at organization level
+
+<Tip>
+Customers are organization-wide so a customer's profile and history follows them to any branch they visit.
+</Tip>
+
+## Branch Access on Dashboard
+
+The dashboard displays a **Branch Access** panel showing:
+
+- All branches you're assigned to
+- Each branch's name and code
+- "Active" badge on your current branch
+- Compact card layout with border and muted background
+
+### No Branch Assignment
+
+If you're not assigned to any branches, you'll see:
+
+> "No branch assignments yet. Contact the owner to add you."
+
+Without branch assignment:
+
+- Dashboard shows no data
+- POS is inaccessible
+- Inventory cannot be managed
+- Purchase recording is disabled
+
+## Best Practices
+
+### Branch Planning
+
+1. **Consistent Naming** - Use clear, recognizable branch names ("MG Road Store", not "Store 1")
+2. **Smart Coding** - Create codes that indicate location (MG-01, DLF-02) or type (WH-01 for warehouse)
+3. **Complete Contact Info** - Ensure every branch has phone and email for communication
+4. **Accurate Addresses** - Keep addresses updated for delivery and customer directions
+
+### User Assignment
+
+1. **Principle of Least Privilege** - Only assign users to branches they actually work at
+2. **Manager Access** - Regional managers may need access to multiple branches
+3. **Clear Responsibilities** - Document which users manage which branches
+4. **Regular Review** - Audit branch assignments quarterly
+
+### Operations
+
+1. **Verify Active Branch** - Always check which branch is active before entering data
+2. **Switch When Needed** - Change active branch when working on different location data
+3. **Consistent Processes** - Use same workflows across all branches
+4. **Cross-Branch Reports** - Owner can aggregate data across branches
+
+### Data Quality
+
+1. **Complete Setup** - Fully configure each branch before assigning users
+2. **Test Access** - Verify users can see appropriate data after assignment
+3. **Monitor Usage** - Track which branches are actively being used
+4. **Archive Closed Locations** - Maintain historical data for closed branches
+
+## Common Scenarios
+
+### Setting Up First Branch
+
+1. After organization signup, navigate to Branches page
+2. Click "Add branch" button
+3. Enter branch code (e.g., MAIN-01)
+4. Enter branch name (e.g., "Main Street Store")
+5. Add contact information
+6. Save branch
+7. Assign yourself to the branch
+8. Refresh dashboard to see data
+
+### Adding a New Location
+
+1. Navigate to Branches page
+2. Click "Add branch"
+3. Follow naming convention from existing branches
+4. Use sequential code (if last was MG-02, use MG-03)
+5. Complete all contact fields
+6. Save branch
+7. Assign appropriate staff members
+8. Configure initial inventory for new location
+
+### Switching Active Branch
+
+From the dashboard:
+
+1. View "Branch Access" panel
+2. See all your assigned branches
+3. Note current active branch (has badge)
+4. Click on different branch to make it active
+5. Dashboard refreshes with new branch data
+6. All features now show selected branch data
+
+### Managing Multi-Branch User
+
+1. Users with multiple branch assignments see all in Branch Access panel
+2. One branch is always marked active
+3. Switch between branches as needed throughout the day
+4. Dashboard, POS, and reports update instantly
+5. Each branch maintains separate transaction history
+
+## Quick Links
+
+The branches page includes a Quick Links card with shortcuts to:
+
+- **Manage Inventory** → `/inventory`
+- **Review Purchases** → `/purchases`
+- **Launch POS** → `/pos`
+
+These links provide quick navigation to operational features after viewing branch information.
+
+## Data Architecture
+
+### Branch Table Schema
+
+```
+branch
+├── id (UUID, primary key)
+├── code (text, unique)
+├── name (text)
+├── address (text, nullable)
+├── phone (text, nullable)
+├── email (text, nullable)
+└── created_at (timestamp)
+```
+
+### Foreign Key Relationships
+
+Many tables reference `branch_id`:
+
+- `sale.branch_id` → `branch.id`
+- `purchase.branch_id` → `branch.id`
+- `stock_level.branch_id` → `branch.id` (if implemented)
+- `user_branch_assignment.branch_id` → `branch.id`
+
+### Query Patterns
+
+Typical queries include:
+
+```sql
+-- Get user's assigned branches
+SELECT branch.* FROM branch
+JOIN user_branch_assignment ON branch.id = user_branch_assignment.branch_id
+WHERE user_branch_assignment.user_id = current_user_id;
+
+-- Get sales for active branch
+SELECT * FROM sale
+WHERE branch_id = active_branch_id;
+```
+
+## Security Considerations
+
+### Row Level Security (RLS)
+
+Supabase RLS policies ensure:
+
+- Users only see branches they're assigned to
+- Sales data filtered by branch assignment
+- Purchase records isolated by branch
+- Organization owners see all branches
+
+### Access Control
+
+- Branch creation restricted to organization owners
+- User assignment controlled by owners
+- Branch deletion may be restricted if transactions exist
+- Audit logs track branch access changes
+
+<Note>
+Row Level Security at the database level provides defense-in-depth - even if application logic fails, users cannot access other branches' data.
+</Note>
+
+## Reporting Across Branches
+
+Organization owners can generate consolidated reports:
+
+- Total sales across all branches
+- Comparative performance between branches
+- Organization-wide inventory levels
+- Consolidated vendor payables
+- Customer shopping patterns across locations
+
+Branch managers see only their assigned branch(es) in reports.

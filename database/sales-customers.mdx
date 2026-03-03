@@ -1,0 +1,544 @@
+---
+title: 'Sales & Customers'
+description: 'Sales transactions, customer records, payments, and returns/exchanges'
+icon: 'receipt'
+---
+
+## Overview
+
+This module handles the complete sales lifecycle: customer management, sales transactions with line items, payment processing, and returns/exchanges.
+
+## Tables
+
+### customer
+
+Stores customer contact information for repeat customers and loyalty tracking.
+
+```sql
+create table public.customer (
+  id uuid primary key default gen_random_uuid(),
+  full_name text not null,
+  phone text,
+  email text,
+  notes text,
+  created_at timestamptz not null default timezone('utc', now()),
+  updated_at timestamptz not null default timezone('utc', now())
+);
+create unique index customer_phone_key on public.customer (phone) where phone is not null;
+```
+
+#### Columns
+
+<ResponseField name="id" type="uuid" required>
+  Primary key, auto-generated UUID
+</ResponseField>
+
+<ResponseField name="full_name" type="text" required>
+  Customer's full name
+</ResponseField>
+
+<ResponseField name="phone" type="text">
+  Contact phone number (unique when provided)
+</ResponseField>
+
+<ResponseField name="email" type="text">
+  Contact email address
+</ResponseField>
+
+<ResponseField name="notes" type="text">
+  Additional notes about the customer
+</ResponseField>
+
+<ResponseField name="created_at" type="timestamptz" required>
+  Record creation timestamp (UTC)
+</ResponseField>
+
+<ResponseField name="updated_at" type="timestamptz" required>
+  Last update timestamp (UTC), automatically updated by trigger
+</ResponseField>
+
+#### Constraints & Indexes
+
+- **Conditional unique index**: `phone` is unique when not null
+- **Trigger**: `set_timestamp_customer` - automatically updates `updated_at`
+
+#### Relationships
+
+- **sale** (1:N) - Customer can have multiple sales
+- **customer_payment** (1:N) - Customer can make multiple payments
+
+---
+
+### sale
+
+Records a sales transaction with totals, discounts, and payment tracking.
+
+```sql
+create table public.sale (
+  id uuid primary key default gen_random_uuid(),
+  branch_id uuid not null references public.branch(id) on delete restrict,
+  customer_id uuid references public.customer(id) on delete set null,
+  cashier_id uuid references public.user_profile(id) on delete set null,
+  sale_number text,
+  sale_date timestamptz not null default timezone('utc', now()),
+  subtotal numeric(12, 2) not null default 0,
+  discount_total numeric(12, 2) not null default 0,
+  tax_total numeric(12, 2) not null default 0,
+  total_amount numeric(12, 2) not null default 0,
+  paid_amount numeric(12, 2) not null default 0,
+  due_amount numeric(12, 2) not null default 0,
+  notes text,
+  created_at timestamptz not null default timezone('utc', now()),
+  updated_at timestamptz not null default timezone('utc', now())
+);
+create unique index sale_branch_number_unique on public.sale (branch_id, sale_number) where sale_number is not null;
+```
+
+#### Columns
+
+<ResponseField name="id" type="uuid" required>
+  Primary key, auto-generated UUID
+</ResponseField>
+
+<ResponseField name="branch_id" type="uuid" required>
+  Reference to branch where sale occurred. Prevents deletion.
+</ResponseField>
+
+<ResponseField name="customer_id" type="uuid">
+  Reference to customer. Null for walk-in sales. Set to null if customer is deleted.
+</ResponseField>
+
+<ResponseField name="cashier_id" type="uuid">
+  Reference to user who processed the sale. Set to null if user is deleted.
+</ResponseField>
+
+<ResponseField name="sale_number" type="text">
+  Branch-specific sale number/invoice number (e.g., 'INV-2024-001')
+</ResponseField>
+
+<ResponseField name="sale_date" type="timestamptz" required default="now()">
+  Date and time when sale was completed
+</ResponseField>
+
+<ResponseField name="subtotal" type="numeric(12,2)" required default="0">
+  Sum of all line items before discounts and taxes
+</ResponseField>
+
+<ResponseField name="discount_total" type="numeric(12,2)" required default="0">
+  Total discount amount applied
+</ResponseField>
+
+<ResponseField name="tax_total" type="numeric(12,2)" required default="0">
+  Total tax amount (GST, VAT, etc.)
+</ResponseField>
+
+<ResponseField name="total_amount" type="numeric(12,2)" required default="0">
+  Final amount: subtotal - discount_total + tax_total
+</ResponseField>
+
+<ResponseField name="paid_amount" type="numeric(12,2)" required default="0">
+  Amount paid by customer
+</ResponseField>
+
+<ResponseField name="due_amount" type="numeric(12,2)" required default="0">
+  Outstanding amount: total_amount - paid_amount
+</ResponseField>
+
+<ResponseField name="notes" type="text">
+  Additional notes or comments
+</ResponseField>
+
+<ResponseField name="created_at" type="timestamptz" required>
+  Record creation timestamp (UTC)
+</ResponseField>
+
+<ResponseField name="updated_at" type="timestamptz" required>
+  Last update timestamp (UTC), automatically updated by trigger
+</ResponseField>
+
+#### Constraints & Indexes
+
+- **Foreign key**: `branch_id` references `branch(id)` with `ON DELETE RESTRICT`
+- **Foreign key**: `customer_id` references `customer(id)` with `ON DELETE SET NULL`
+- **Foreign key**: `cashier_id` references `user_profile(id)` with `ON DELETE SET NULL`
+- **Composite unique index**: `(branch_id, sale_number)` when sale_number is not null
+- **Trigger**: `set_timestamp_sale` - automatically updates `updated_at`
+
+#### Relationships
+
+- **branch** (N:1) - Sale belongs to a branch
+- **customer** (N:1) - Sale may belong to a customer
+- **user_profile** (N:1) - Sale processed by a cashier
+- **sale_item** (1:N) - Sale has multiple line items
+- **customer_payment** (1:N) - Sale can have multiple payments
+- **return_transaction** (1:N) - Sale can have returns/exchanges
+
+---
+
+### sale_item
+
+Individual line items in a sale transaction.
+
+```sql
+create table public.sale_item (
+  id uuid primary key default gen_random_uuid(),
+  sale_id uuid not null references public.sale(id) on delete cascade,
+  item_variant_id uuid not null references public.item_variant(id) on delete restrict,
+  quantity numeric(12, 2) not null check (quantity > 0),
+  unit_price numeric(12, 2) not null check (unit_price >= 0),
+  discount numeric(12, 2) not null default 0,
+  cost_price numeric(12, 2),
+  total_price numeric(12, 2) not null default 0,
+  created_at timestamptz not null default timezone('utc', now())
+);
+create index sale_item_sale_idx on public.sale_item (sale_id);
+```
+
+#### Columns
+
+<ResponseField name="id" type="uuid" required>
+  Primary key, auto-generated UUID
+</ResponseField>
+
+<ResponseField name="sale_id" type="uuid" required>
+  Reference to parent sale. Cascade deletes when sale is deleted.
+</ResponseField>
+
+<ResponseField name="item_variant_id" type="uuid" required>
+  Reference to item variant being sold. Prevents deletion.
+</ResponseField>
+
+<ResponseField name="quantity" type="numeric(12,2)" required>
+  Quantity sold (must be > 0)
+</ResponseField>
+
+<ResponseField name="unit_price" type="numeric(12,2)" required>
+  Selling price per unit (must be >= 0)
+</ResponseField>
+
+<ResponseField name="discount" type="numeric(12,2)" required default="0">
+  Discount amount per unit
+</ResponseField>
+
+<ResponseField name="cost_price" type="numeric(12,2)">
+  Cost price at time of sale (for profit calculation)
+</ResponseField>
+
+<ResponseField name="total_price" type="numeric(12,2)" required default="0">
+  Line total: (unit_price - discount) * quantity
+</ResponseField>
+
+<ResponseField name="created_at" type="timestamptz" required>
+  Record creation timestamp (UTC)
+</ResponseField>
+
+#### Constraints & Indexes
+
+- **Foreign key**: `sale_id` references `sale(id)` with `ON DELETE CASCADE`
+- **Foreign key**: `item_variant_id` references `item_variant(id)` with `ON DELETE RESTRICT`
+- **Check constraint**: `quantity > 0`
+- **Check constraint**: `unit_price >= 0`
+- **Index**: `sale_item_sale_idx` on `sale_id` for efficient lookups
+
+#### Relationships
+
+- **sale** (N:1) - Line item belongs to a sale
+- **item_variant** (N:1) - Line item is for a specific variant
+- **return_item** (1:N) - Line item can be returned
+
+---
+
+### customer_payment
+
+Tracks payments received from customers, linked to specific sales or general account payments.
+
+```sql
+create table public.customer_payment (
+  id uuid primary key default gen_random_uuid(),
+  customer_id uuid not null references public.customer(id) on delete cascade,
+  sale_id uuid references public.sale(id) on delete set null,
+  amount numeric(12, 2) not null check (amount > 0),
+  method public.payment_method not null default 'cash',
+  paid_at timestamptz not null default timezone('utc', now()),
+  reference text,
+  notes text,
+  created_at timestamptz not null default timezone('utc', now())
+);
+create index customer_payment_customer_idx on public.customer_payment (customer_id);
+create index customer_payment_sale_idx on public.customer_payment (sale_id);
+```
+
+#### Columns
+
+<ResponseField name="id" type="uuid" required>
+  Primary key, auto-generated UUID
+</ResponseField>
+
+<ResponseField name="customer_id" type="uuid" required>
+  Reference to customer. Cascade deletes when customer is deleted.
+</ResponseField>
+
+<ResponseField name="sale_id" type="uuid">
+  Optional reference to specific sale. Set to null if sale is deleted.
+</ResponseField>
+
+<ResponseField name="amount" type="numeric(12,2)" required>
+  Payment amount (must be > 0)
+</ResponseField>
+
+<ResponseField name="method" type="payment_method" required default="cash">
+  Payment method used.
+  
+  **Enum values**: `cash`, `upi`, `card`, `other`
+</ResponseField>
+
+<ResponseField name="paid_at" type="timestamptz" required default="now()">
+  Date and time when payment was received
+</ResponseField>
+
+<ResponseField name="reference" type="text">
+  Reference number (transaction ID, check number, etc.)
+</ResponseField>
+
+<ResponseField name="notes" type="text">
+  Additional notes about the payment
+</ResponseField>
+
+<ResponseField name="created_at" type="timestamptz" required>
+  Record creation timestamp (UTC)
+</ResponseField>
+
+#### Constraints & Indexes
+
+- **Foreign key**: `customer_id` references `customer(id)` with `ON DELETE CASCADE`
+- **Foreign key**: `sale_id` references `sale(id)` with `ON DELETE SET NULL`
+- **Check constraint**: `amount > 0`
+- **Index**: `customer_payment_customer_idx` on `customer_id`
+- **Index**: `customer_payment_sale_idx` on `sale_id`
+
+---
+
+## Returns & Exchanges
+
+### return_transaction
+
+Records a return or exchange transaction for a previous sale.
+
+```sql
+create table public.return_transaction (
+  id uuid primary key default gen_random_uuid(),
+  sale_id uuid not null references public.sale(id) on delete restrict,
+  branch_id uuid not null references public.branch(id) on delete restrict,
+  type public.return_kind not null,
+  reason text,
+  created_by uuid references public.user_profile(id) on delete set null,
+  created_at timestamptz not null default timezone('utc', now())
+);
+create index return_transaction_sale_idx on public.return_transaction (sale_id);
+```
+
+#### Columns
+
+<ResponseField name="id" type="uuid" required>
+  Primary key, auto-generated UUID
+</ResponseField>
+
+<ResponseField name="sale_id" type="uuid" required>
+  Reference to original sale. Prevents deletion.
+</ResponseField>
+
+<ResponseField name="branch_id" type="uuid" required>
+  Reference to branch where return was processed. Prevents deletion.
+</ResponseField>
+
+<ResponseField name="type" type="return_kind" required>
+  Type of transaction.
+  
+  **Enum values**: `return` (refund), `exchange` (swap items)
+</ResponseField>
+
+<ResponseField name="reason" type="text">
+  Reason for return/exchange
+</ResponseField>
+
+<ResponseField name="created_by" type="uuid">
+  Reference to user who processed the return. Set to null if user is deleted.
+</ResponseField>
+
+<ResponseField name="created_at" type="timestamptz" required>
+  Transaction timestamp (UTC)
+</ResponseField>
+
+#### Constraints & Indexes
+
+- **Foreign key**: `sale_id` references `sale(id)` with `ON DELETE RESTRICT`
+- **Foreign key**: `branch_id` references `branch(id)` with `ON DELETE RESTRICT`
+- **Foreign key**: `created_by` references `user_profile(id)` with `ON DELETE SET NULL`
+- **Index**: `return_transaction_sale_idx` on `sale_id`
+
+#### Relationships
+
+- **sale** (N:1) - Return is for a specific sale
+- **branch** (N:1) - Return processed at a branch
+- **user_profile** (N:1) - Return processed by a user
+- **return_item** (1:N) - Items being returned
+- **exchange_item** (1:N) - Items being given in exchange
+
+---
+
+### return_item
+
+Items being returned as part of a return transaction.
+
+```sql
+create table public.return_item (
+  id uuid primary key default gen_random_uuid(),
+  return_id uuid not null references public.return_transaction(id) on delete cascade,
+  sale_item_id uuid references public.sale_item(id) on delete set null,
+  item_variant_id uuid not null references public.item_variant(id) on delete restrict,
+  quantity numeric(12, 2) not null check (quantity > 0),
+  refund_amount numeric(12, 2) not null default 0,
+  created_at timestamptz not null default timezone('utc', now())
+);
+create index return_item_return_idx on public.return_item (return_id);
+```
+
+#### Columns
+
+<ResponseField name="id" type="uuid" required>
+  Primary key, auto-generated UUID
+</ResponseField>
+
+<ResponseField name="return_id" type="uuid" required>
+  Reference to parent return transaction. Cascade deletes.
+</ResponseField>
+
+<ResponseField name="sale_item_id" type="uuid">
+  Optional reference to original sale line item. Set to null if deleted.
+</ResponseField>
+
+<ResponseField name="item_variant_id" type="uuid" required>
+  Reference to item variant being returned. Prevents deletion.
+</ResponseField>
+
+<ResponseField name="quantity" type="numeric(12,2)" required>
+  Quantity being returned (must be > 0)
+</ResponseField>
+
+<ResponseField name="refund_amount" type="numeric(12,2)" required default="0">
+  Refund amount for this line item
+</ResponseField>
+
+<ResponseField name="created_at" type="timestamptz" required>
+  Record creation timestamp (UTC)
+</ResponseField>
+
+#### Constraints & Indexes
+
+- **Foreign key**: `return_id` references `return_transaction(id)` with `ON DELETE CASCADE`
+- **Foreign key**: `sale_item_id` references `sale_item(id)` with `ON DELETE SET NULL`
+- **Foreign key**: `item_variant_id` references `item_variant(id)` with `ON DELETE RESTRICT`
+- **Check constraint**: `quantity > 0`
+- **Index**: `return_item_return_idx` on `return_id`
+
+---
+
+### exchange_item
+
+Items being given to customer in an exchange transaction.
+
+```sql
+create table public.exchange_item (
+  id uuid primary key default gen_random_uuid(),
+  return_id uuid not null references public.return_transaction(id) on delete cascade,
+  item_variant_id uuid not null references public.item_variant(id) on delete restrict,
+  quantity numeric(12, 2) not null check (quantity > 0),
+  unit_price numeric(12, 2) not null check (unit_price >= 0),
+  created_at timestamptz not null default timezone('utc', now())
+);
+create index exchange_item_return_idx on public.exchange_item (return_id);
+```
+
+#### Columns
+
+<ResponseField name="id" type="uuid" required>
+  Primary key, auto-generated UUID
+</ResponseField>
+
+<ResponseField name="return_id" type="uuid" required>
+  Reference to parent return transaction. Cascade deletes.
+</ResponseField>
+
+<ResponseField name="item_variant_id" type="uuid" required>
+  Reference to item variant being given. Prevents deletion.
+</ResponseField>
+
+<ResponseField name="quantity" type="numeric(12,2)" required>
+  Quantity being given (must be > 0)
+</ResponseField>
+
+<ResponseField name="unit_price" type="numeric(12,2)" required>
+  Price per unit of exchanged item (must be >= 0)
+</ResponseField>
+
+<ResponseField name="created_at" type="timestamptz" required>
+  Record creation timestamp (UTC)
+</ResponseField>
+
+#### Constraints & Indexes
+
+- **Foreign key**: `return_id` references `return_transaction(id)` with `ON DELETE CASCADE`
+- **Foreign key**: `item_variant_id` references `item_variant(id)` with `ON DELETE RESTRICT`
+- **Check constraint**: `quantity > 0`
+- **Check constraint**: `unit_price >= 0`
+- **Index**: `exchange_item_return_idx` on `return_id`
+
+## Transaction Flow
+
+### Complete Sale
+
+<Steps>
+  <Step title="Create Sale">
+    Insert into `sale` table with branch, customer, and cashier
+  </Step>
+  <Step title="Add Line Items">
+    Insert into `sale_item` for each product being sold
+  </Step>
+  <Step title="Calculate Totals">
+    Update `sale` with subtotal, discounts, taxes, and total_amount
+  </Step>
+  <Step title="Record Payment">
+    Insert into `customer_payment` and update `sale.paid_amount` and `sale.due_amount`
+  </Step>
+</Steps>
+
+### Process Return
+
+<Steps>
+  <Step title="Create Return Transaction">
+    Insert into `return_transaction` with type='return'
+  </Step>
+  <Step title="Add Returned Items">
+    Insert into `return_item` for each item being returned with refund amounts
+  </Step>
+  <Step title="Process Refund">
+    Issue refund to customer (negative `customer_payment` or cash)
+  </Step>
+</Steps>
+
+### Process Exchange
+
+<Steps>
+  <Step title="Create Return Transaction">
+    Insert into `return_transaction` with type='exchange'
+  </Step>
+  <Step title="Add Returned Items">
+    Insert into `return_item` for items being returned
+  </Step>
+  <Step title="Add Exchange Items">
+    Insert into `exchange_item` for new items being given
+  </Step>
+  <Step title="Handle Price Difference">
+    If exchange items cost more/less, adjust payment accordingly
+  </Step>
+</Steps>

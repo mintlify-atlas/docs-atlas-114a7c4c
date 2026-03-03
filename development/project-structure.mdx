@@ -1,0 +1,198 @@
+---
+title: 'Project Structure'
+description: 'Understanding the codebase organization and directory structure'
+---
+
+## Overview
+
+Pramukh Men's Wear is built with Next.js 14+ using the App Router architecture. The project follows a feature-based organization with clear separation between authenticated and public routes.
+
+## Directory Structure
+
+### Root Level
+
+```
+/
+├── app/                  # Next.js App Router pages
+├── components/           # React components
+├── lib/                  # Business logic and utilities
+├── utils/                # Framework utilities (Supabase)
+├── hooks/                # Custom React hooks
+├── public/               # Static assets
+├── supabase/             # Database migrations and types
+└── middleware.ts         # Next.js middleware for auth
+```
+
+### App Directory (Routes)
+
+The `app/` directory uses route groups to organize authenticated and public pages:
+
+```
+app/
+├── (app)/               # Authenticated routes (protected)
+│   ├── layout.tsx       # App shell with sidebar navigation
+│   ├── actions.ts       # Root-level server actions
+│   ├── dashboard/
+│   ├── inventory/
+│   │   ├── page.tsx
+│   │   ├── actions.ts
+│   │   ├── categories/
+│   │   ├── colors/
+│   │   └── items/
+│   │       ├── new/
+│   │       └── [id]/
+│   │           └── variants/new/
+│   ├── pos/
+│   ├── customers/
+│   │   ├── page.tsx
+│   │   └── actions.ts
+│   ├── vendors/
+│   │   ├── page.tsx
+│   │   └── actions.ts
+│   ├── purchases/
+│   │   ├── page.tsx
+│   │   └── actions.ts
+│   ├── branches/
+│   │   ├── page.tsx
+│   │   └── actions.ts
+│   └── configurations/
+├── (auth)/              # Authentication routes (public)
+│   └── login/
+│       ├── page.tsx
+│       └── actions.ts
+├── layout.tsx           # Root layout
+└── page.tsx             # Home page
+```
+
+#### Route Organization Pattern
+
+Each feature module follows this structure:
+
+- **`page.tsx`** - UI component for the route
+- **`actions.ts`** - Server actions for the feature (create, update, delete)
+- **Nested routes** - Sub-features organized in subdirectories
+
+### Components Directory
+
+```
+components/
+├── app/                 # Application-specific components
+│   ├── add-branch-dialog.tsx
+│   ├── add-category-dialog.tsx
+│   ├── add-color-dialog.tsx
+│   ├── add-customer-dialog.tsx
+│   ├── add-vendor-dialog.tsx
+│   ├── branch-switcher.tsx
+│   ├── form-select.tsx
+│   ├── form-submit-button.tsx
+│   ├── sidebar-nav.tsx
+│   └── mode-toggle.tsx
+└── ui/                  # shadcn/ui components
+    ├── button.tsx
+    ├── dialog.tsx
+    ├── form.tsx
+    ├── sidebar.tsx
+    └── ...
+```
+
+**Component Organization:**
+
+- `components/app/` - Domain-specific, business logic components
+- `components/ui/` - Generic, reusable UI primitives from shadcn/ui
+
+### Library Directory
+
+```
+lib/
+├── server/
+│   └── app-context.ts   # Server-side context (user, branch, auth)
+├── types/
+│   ├── inventory.ts     # TypeScript types for inventory
+│   └── pos.ts           # TypeScript types for POS
+└── utils.ts             # Utility functions (cn, etc.)
+```
+
+### Utils Directory
+
+```
+utils/
+└── supabase/
+    ├── client.ts        # Client-side Supabase client
+    ├── server.ts        # Server-side Supabase client
+    └── middleware.ts    # Middleware Supabase client
+```
+
+## Key Architectural Patterns
+
+### Route Groups
+
+- **`(app)`** - Protected routes requiring authentication. Uses `lib/server/app-context.ts:26` to enforce auth.
+- **`(auth)`** - Public authentication pages (login, signup)
+
+Route groups provide layout isolation without affecting URL structure.
+
+### Server Actions Pattern
+
+Each feature module includes an `actions.ts` file with server actions:
+
+```typescript
+// Pattern: app/(app)/[feature]/actions.ts
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { createClient } from "@/utils/supabase/server";
+
+export async function createResource(formData: FormData) {
+  // Implementation
+}
+```
+
+See [Server Actions](/development/server-actions) for detailed patterns.
+
+### Layout Composition
+
+1. **Root Layout** (`app/layout.tsx`) - Theme provider, fonts, metadata
+2. **App Layout** (`app/(app)/layout.tsx`) - Sidebar, header, navigation, auth context
+3. **Page** - Feature-specific UI
+
+The app layout uses `getAppContext()` from `lib/server/app-context.ts:26` to load user and branch data.
+
+### Component Naming Conventions
+
+- **Dialogs**: `add-[resource]-dialog.tsx` - Modal forms for creating resources
+- **Menus**: `[resource]-action-menu.tsx` - Dropdown menus for resource actions
+- **Forms**: Prefixed with `form-` for form-specific components
+- **Pages**: Always `page.tsx` (Next.js convention)
+- **Actions**: Always `actions.ts` (project convention)
+
+## File Naming
+
+- **React components**: `kebab-case.tsx`
+- **Server actions**: `actions.ts`
+- **Types**: `kebab-case.ts`
+- **Utilities**: `kebab-case.ts`
+
+## Import Aliases
+
+The project uses TypeScript path aliases:
+
+```typescript
+import { Button } from "@/components/ui/button";
+import { getAppContext } from "@/lib/server/app-context";
+import { createClient } from "@/utils/supabase/server";
+```
+
+`@/` maps to the project root directory.
+
+## Database Integration
+
+Database interactions use Supabase clients:
+
+- **Server components/actions**: `createClient()` from `@/utils/supabase/server`
+- **Client components**: `createClient()` from `@/utils/supabase/client`
+- **Middleware**: `createClient()` from `@/utils/supabase/middleware`
+
+## Next Steps
+
+- [App Context](/development/app-context) - Understanding server-side context
+- [Server Actions](/development/server-actions) - Form handling and mutations

@@ -1,0 +1,362 @@
+---
+title: Database Schema
+description: Overview of the Pramukh Men's Wear database structure and tables
+---
+
+Pramukh Men's Wear uses PostgreSQL (via Supabase) with a comprehensive schema covering branches, inventory, sales, purchases, and customer management.
+
+## Schema Overview
+
+The database schema is defined in `/supabase/migrations/0001_initial_schema.sql` and includes:
+
+- **Branch Management** - Multi-branch support with user assignments
+- **Inventory** - Categories, items, variants, colors, and sizing
+- **Purchases** - Vendor management, purchase orders, and payments
+- **Sales** - Point of sale transactions, customer records, and payments
+- **Returns & Exchanges** - Product return and exchange processing
+
+## Core Tables
+
+### Branch & User Management
+
+<AccordionGroup>
+  <Accordion title="branch - Branch locations">
+    Stores information about each branch/showroom location.
+    
+    **Key Fields:**
+    - `id` (uuid, PK) - Unique branch identifier
+    - `code` (text, unique) - Branch code (e.g., 'main')
+    - `name` (text) - Branch display name
+    - `address`, `phone`, `email` - Contact information
+    - `created_at`, `updated_at` - Timestamps
+    
+    **Example:**
+    ```sql
+    INSERT INTO public.branch (code, name, address)
+    VALUES ('main', 'Main Showroom', '123 Fashion Street');
+    ```
+  </Accordion>
+  
+  <Accordion title="user_profile - User information">
+    Links to Supabase auth.users and stores user details and default role.
+    
+    **Key Fields:**
+    - `id` (uuid, PK, FK to auth.users) - User identifier
+    - `full_name` (text) - User's full name
+    - `phone` (text, unique) - Contact number
+    - `role` (branch_role) - Default role: owner, manager, or cashier
+    - `created_at`, `updated_at` - Timestamps
+    
+    **Note:** The `role` field in `user_profile` is the user's default role. Actual permissions are determined by the `branch_user` table.
+  </Accordion>
+  
+  <Accordion title="branch_user - User-branch assignments">
+    Maps users to branches with specific roles. A user can be assigned to multiple branches with different roles.
+    
+    **Key Fields:**
+    - `id` (uuid, PK) - Assignment identifier
+    - `branch_id` (uuid, FK) - Reference to branch
+    - `user_id` (uuid, FK) - Reference to user_profile
+    - `role` (branch_role) - User's role at this branch
+    - `created_at` - Assignment timestamp
+    
+    **Unique Constraint:** One user can only have one role per branch (branch_id, user_id unique).
+  </Accordion>
+</AccordionGroup>
+
+### Inventory Management
+
+<AccordionGroup>
+  <Accordion title="category - Product categories">
+    Defines product categories (e.g., Shirts, Trousers, Suits).
+    
+    **Key Fields:**
+    - `id` (uuid, PK)
+    - `name` (text, unique) - Category name
+    - `size_type` (enum) - 'alpha' (S/M/L), 'numeric' (28/30/32), or 'free_size'
+    - `description` (text) - Category description
+  </Accordion>
+  
+  <Accordion title="color - Available colors">
+    Master list of colors for products.
+    
+    **Key Fields:**
+    - `id` (uuid, PK)
+    - `name` (text, unique) - Color name
+    - `hex_value` (char(7)) - Hex color code (e.g., '#FF0000')
+  </Accordion>
+  
+  <Accordion title="item - Products">
+    Base product information.
+    
+    **Key Fields:**
+    - `id` (uuid, PK)
+    - `category_id` (uuid, FK) - Product category
+    - `code` (text, unique) - Product code/SKU prefix
+    - `name` (text) - Product name
+    - `description` (text) - Product description
+  </Accordion>
+  
+  <Accordion title="item_variant - Product variants">
+    Specific variants of items (size + color combinations).
+    
+    **Key Fields:**
+    - `id` (uuid, PK)
+    - `item_id` (uuid, FK) - Parent item
+    - `sku` (text, unique) - Stock keeping unit
+    - `size_label` (text) - Size (S, M, L, 32, 34, etc.)
+    - `color_id` (uuid, FK) - Variant color
+    - `qr_code_url` (text) - QR code for quick scanning
+    - `base_cost` (numeric) - Purchase cost
+    - `base_price` (numeric) - Sale price
+    - `is_active` (boolean) - Whether variant is available for sale
+  </Accordion>
+</AccordionGroup>
+
+### Purchase Management
+
+<AccordionGroup>
+  <Accordion title="vendor - Suppliers">
+    Information about suppliers/vendors.
+    
+    **Key Fields:**
+    - `id` (uuid, PK)
+    - `name` (text, unique) - Vendor name
+    - `contact_name`, `phone`, `email` - Contact details
+    - `gst_number` (text) - GST registration number
+    - `address` (text) - Vendor address
+  </Accordion>
+  
+  <Accordion title="purchase - Purchase orders">
+    Records of inventory purchases from vendors.
+    
+    **Key Fields:**
+    - `id` (uuid, PK)
+    - `branch_id` (uuid, FK) - Purchasing branch
+    - `vendor_id` (uuid, FK) - Supplier
+    - `ordered_by` (uuid, FK) - User who created the purchase
+    - `invoice_number` (text) - Vendor invoice number
+    - `purchase_date` (date) - Purchase date
+    - `subtotal`, `discount_total`, `tax_total`, `total_amount` (numeric)
+    - `notes` (text)
+  </Accordion>
+  
+  <Accordion title="purchase_item - Purchase line items">
+    Individual items in a purchase order.
+    
+    **Key Fields:**
+    - `id` (uuid, PK)
+    - `purchase_id` (uuid, FK)
+    - `item_variant_id` (uuid, FK)
+    - `quantity` (numeric) - Quantity purchased
+    - `unit_cost` (numeric) - Cost per unit
+    - `discount` (numeric) - Discount amount
+    - `total_cost` (numeric) - Total line cost
+  </Accordion>
+  
+  <Accordion title="vendor_payment - Payments to vendors">
+    Tracks payments made to vendors.
+    
+    **Key Fields:**
+    - `id` (uuid, PK)
+    - `vendor_id` (uuid, FK)
+    - `purchase_id` (uuid, FK, optional) - Associated purchase
+    - `amount` (numeric) - Payment amount
+    - `method` (enum) - 'cash', 'upi', 'card', or 'other'
+    - `paid_at` (timestamptz) - Payment timestamp
+    - `reference`, `notes` (text)
+  </Accordion>
+</AccordionGroup>
+
+### Sales Management
+
+<AccordionGroup>
+  <Accordion title="customer - Customer records">
+    Customer information for sales and payments.
+    
+    **Key Fields:**
+    - `id` (uuid, PK)
+    - `full_name` (text) - Customer name
+    - `phone` (text, unique) - Contact number
+    - `email` (text)
+    - `notes` (text) - Customer notes
+  </Accordion>
+  
+  <Accordion title="sale - Sales transactions">
+    Records of completed sales.
+    
+    **Key Fields:**
+    - `id` (uuid, PK)
+    - `branch_id` (uuid, FK) - Branch where sale occurred
+    - `customer_id` (uuid, FK, optional) - Customer
+    - `cashier_id` (uuid, FK) - User who processed the sale
+    - `sale_number` (text) - Unique sale number per branch
+    - `sale_date` (timestamptz) - Transaction timestamp
+    - `subtotal`, `discount_total`, `tax_total`, `total_amount` (numeric)
+    - `paid_amount`, `due_amount` (numeric) - Payment tracking
+    - `notes` (text)
+  </Accordion>
+  
+  <Accordion title="sale_item - Sale line items">
+    Individual items in a sale.
+    
+    **Key Fields:**
+    - `id` (uuid, PK)
+    - `sale_id` (uuid, FK)
+    - `item_variant_id` (uuid, FK)
+    - `quantity` (numeric) - Quantity sold
+    - `unit_price` (numeric) - Price per unit
+    - `discount` (numeric) - Discount amount
+    - `cost_price` (numeric) - Cost for profit calculation
+    - `total_price` (numeric) - Total line price
+  </Accordion>
+  
+  <Accordion title="customer_payment - Customer payments">
+    Tracks payments received from customers.
+    
+    **Key Fields:**
+    - `id` (uuid, PK)
+    - `customer_id` (uuid, FK)
+    - `sale_id` (uuid, FK, optional) - Associated sale
+    - `amount` (numeric) - Payment amount
+    - `method` (enum) - 'cash', 'upi', 'card', or 'other'
+    - `paid_at` (timestamptz) - Payment timestamp
+    - `reference`, `notes` (text)
+  </Accordion>
+</AccordionGroup>
+
+### Returns & Exchanges
+
+<AccordionGroup>
+  <Accordion title="return_transaction - Return/exchange records">
+    Main record for returns and exchanges.
+    
+    **Key Fields:**
+    - `id` (uuid, PK)
+    - `sale_id` (uuid, FK) - Original sale
+    - `branch_id` (uuid, FK) - Branch processing the return
+    - `type` (enum) - 'return' or 'exchange'
+    - `reason` (text) - Reason for return/exchange
+    - `created_by` (uuid, FK) - User who processed it
+    - `created_at` (timestamptz)
+  </Accordion>
+  
+  <Accordion title="return_item - Items being returned">
+    Items returned by the customer.
+    
+    **Key Fields:**
+    - `id` (uuid, PK)
+    - `return_id` (uuid, FK)
+    - `sale_item_id` (uuid, FK, optional) - Original sale line item
+    - `item_variant_id` (uuid, FK) - Item being returned
+    - `quantity` (numeric) - Quantity returned
+    - `refund_amount` (numeric) - Amount to refund
+  </Accordion>
+  
+  <Accordion title="exchange_item - Items given in exchange">
+    New items given to customer in an exchange.
+    
+    **Key Fields:**
+    - `id` (uuid, PK)
+    - `return_id` (uuid, FK)
+    - `item_variant_id` (uuid, FK) - Replacement item
+    - `quantity` (numeric) - Quantity exchanged
+    - `unit_price` (numeric) - Price of replacement item
+  </Accordion>
+</AccordionGroup>
+
+## Enums
+
+The schema defines several enumerated types:
+
+```sql
+-- User roles at each branch
+CREATE TYPE public.branch_role AS ENUM ('owner', 'manager', 'cashier');
+
+-- Size system for categories
+CREATE TYPE public.size_type AS ENUM ('alpha', 'numeric', 'free_size');
+
+-- Payment methods
+CREATE TYPE public.payment_method AS ENUM ('cash', 'upi', 'card', 'other');
+
+-- Return/exchange type
+CREATE TYPE public.return_kind AS ENUM ('return', 'exchange');
+```
+
+## Automatic Timestamps
+
+Most tables include automatic timestamp updates via a trigger:
+
+```sql
+CREATE OR REPLACE FUNCTION public.set_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = timezone('utc', now());
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+```
+
+Tables with `updated_at` fields automatically update this timestamp on every UPDATE operation.
+
+## Running Migrations
+
+To create the database schema:
+
+<Steps>
+  <Step title="Install Supabase CLI">
+    If you haven't already, install the Supabase CLI:
+    
+    ```bash
+    npm install -g supabase
+    ```
+  </Step>
+  
+  <Step title="Link your project">
+    Link to your Supabase project:
+    
+    ```bash
+    supabase link --project-ref your-project-ref
+    ```
+  </Step>
+  
+  <Step title="Push migrations">
+    Apply the schema migrations:
+    
+    ```bash
+    supabase db push
+    ```
+    
+    This will execute:
+    - `0001_initial_schema.sql` - Creates all tables and relationships
+    - `0002_seed_initial_data.sql` - Seeds initial branch and user data
+  </Step>
+</Steps>
+
+## Viewing the Schema
+
+You can view the complete schema in your Supabase dashboard:
+
+1. Go to the [Supabase dashboard](https://supabase.com/dashboard)
+2. Select your project
+3. Navigate to Database > Schema Visualizer
+
+Or query the schema directly:
+
+```sql
+SELECT table_name 
+FROM information_schema.tables 
+WHERE table_schema = 'public'
+ORDER BY table_name;
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Authentication Setup" icon="lock" href="/setup/authentication">
+    Set up Supabase authentication and user roles
+  </Card>
+  <Card title="Branch Setup" icon="building" href="/setup/branch-setup">
+    Create your first branch and assign users
+  </Card>
+</CardGroup>

@@ -1,0 +1,337 @@
+---
+title: Authentication Setup
+description: Configure Supabase authentication and understand user roles in Pramukh Men's Wear
+---
+
+Pramukh Men's Wear uses Supabase Authentication for user management with a role-based access control system that supports multi-branch operations.
+
+## Authentication Architecture
+
+The application integrates Supabase Auth with a custom user profile and role system:
+
+```
+Supabase auth.users (authentication)
+        |
+        v
+user_profile (basic info + default role)
+        |
+        v
+branch_user (branch-specific roles)
+```
+
+### Key Components
+
+<AccordionGroup>
+  <Accordion title="Supabase Auth (auth.users)">
+    Handles authentication credentials, sessions, and JWT tokens.
+    
+    - Email/password authentication
+    - Session management via cookies
+    - JWT tokens for API authentication
+    
+    Users are created via Supabase CLI or the Supabase Dashboard.
+  </Accordion>
+  
+  <Accordion title="User Profile (user_profile table)">
+    Extends auth.users with business information.
+    
+    - Links to auth.users via the same UUID
+    - Stores full name, phone, and default role
+    - Automatically deleted when auth user is deleted (CASCADE)
+    
+    See `/supabase/migrations/0001_initial_schema.sql:23-30`
+  </Accordion>
+  
+  <Accordion title="Branch Users (branch_user table)">
+    Maps users to branches with specific roles.
+    
+    - A user can work at multiple branches
+    - Each user-branch combination has a specific role
+    - Determines actual access permissions
+    
+    See `/supabase/migrations/0001_initial_schema.sql:34-41`
+  </Accordion>
+</AccordionGroup>
+
+## User Roles
+
+Pramukh Men's Wear has three user roles defined in the `branch_role` enum:
+
+<CardGroup cols={3}>
+  <Card title="Owner" icon="crown">
+    **Full access** to all features:
+    - Branch management
+    - User management
+    - System configuration
+    - All inventory operations
+    - All sales operations
+    - Reports and analytics
+  </Card>
+  
+  <Card title="Manager" icon="user-tie">
+    **Branch management** access:
+    - Inventory management
+    - Purchase orders
+    - Sales operations
+    - Customer management
+    - Branch-level reports
+    
+    Cannot manage users or system settings.
+  </Card>
+  
+  <Card title="Cashier" icon="cash-register">
+    **Point of sale** access:
+    - Process sales
+    - Accept payments
+    - Handle returns/exchanges
+    - View inventory
+    
+    Cannot manage inventory or view reports.
+  </Card>
+</CardGroup>
+
+## Middleware Protection
+
+The application uses Next.js middleware to protect routes and manage authentication.
+
+### How It Works
+
+<Steps>
+  <Step title="Middleware intercepts requests">
+    All requests (except static files) are intercepted by middleware at `/middleware.ts:4`.
+  </Step>
+  
+  <Step title="Session validation">
+    The middleware calls `updateSession()` from `/utils/supabase/middleware.ts` which:
+    - Creates a Supabase server client
+    - Validates the user's session via `supabase.auth.getUser()`
+    - Refreshes the authentication cookie
+  </Step>
+  
+  <Step title="Redirect unauthenticated users">
+    If no valid session exists and the user is not on `/login`, `/auth`, or `/error`, they are redirected to `/login`.
+    
+    See `/utils/supabase/middleware.ts:40-50`
+  </Step>
+  
+  <Step title="Allow authenticated requests">
+    Valid sessions are allowed to proceed to the requested page.
+  </Step>
+</Steps>
+
+### Protected Routes
+
+The middleware protects all routes except:
+
+- `/_next/static` - Next.js static files
+- `/_next/image` - Next.js image optimization
+- `/favicon.ico` - Favicon
+- Static assets (svg, png, jpg, jpeg, gif, webp)
+
+See configuration at `/middleware.ts:8-18`
+
+## Supabase Client Utilities
+
+The application includes three Supabase client utilities:
+
+### Browser Client (`/utils/supabase/client.ts`)
+
+For client-side components:
+
+```typescript
+import { createClient } from '@/utils/supabase/client'
+
+const supabase = createClient()
+const { data, error } = await supabase.auth.getUser()
+```
+
+### Server Client (`/utils/supabase/server.ts`)
+
+For server components and API routes:
+
+```typescript
+import { createClient } from '@/utils/supabase/server'
+
+const supabase = await createClient()
+const { data, error } = await supabase.auth.getUser()
+```
+
+### Middleware Client (`/utils/supabase/middleware.ts`)
+
+For authentication middleware (automatically used).
+
+## Setting Up Authentication
+
+Follow these steps to set up authentication for your installation:
+
+<Steps>
+  <Step title="Configure environment variables">
+    Ensure your Supabase credentials are set in `.env.local`:
+    
+    ```bash
+    NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+    NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+    SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+    ```
+    
+    See [Environment Variables](/setup/environment-variables) for details.
+  </Step>
+  
+  <Step title="Apply database migrations">
+    Run the migrations to create the user tables:
+    
+    ```bash
+    supabase db push
+    ```
+    
+    This creates the `user_profile` and `branch_user` tables.
+  </Step>
+  
+  <Step title="Create your first user">
+    Create an auth user in Supabase:
+    
+    ```bash
+    supabase auth signups create \
+      --email owner@pramukh.local \
+      --password your-secure-password
+    ```
+    
+    <Note>
+      Copy the returned user ID - you'll need it in the next step.
+    </Note>
+  </Step>
+  
+  <Step title="Create user profile">
+    Create the user profile record:
+    
+    ```bash
+    supabase db query "INSERT INTO public.user_profile (id, full_name, role) \
+      VALUES ('<copied-auth-user-id>', 'Main Owner', 'owner');"
+    ```
+    
+    Replace `<copied-auth-user-id>` with the ID from step 3.
+  </Step>
+  
+  <Step title="Assign to branch">
+    Assign the user to a branch (after creating one in [Branch Setup](/setup/branch-setup)):
+    
+    ```bash
+    supabase db query "INSERT INTO public.branch_user (branch_id, user_id, role) \
+      SELECT b.id, u.id, 'owner' \
+      FROM public.branch b \
+      JOIN public.user_profile u ON u.id = '<copied-auth-user-id>' \
+      WHERE b.code = 'main';"
+    ```
+  </Step>
+  
+  <Step title="Test login">
+    Start the dev server and visit the login page:
+    
+    ```bash
+    pnpm dev
+    ```
+    
+    Navigate to `http://localhost:3000/login` and log in with your credentials.
+  </Step>
+</Steps>
+
+## Login Flow
+
+The login page is located at `/app/(auth)/login/page.tsx`. Here's how it works:
+
+<Steps>
+  <Step title="User enters credentials">
+    The user enters their email (or phone if configured) and password on the login form.
+  </Step>
+  
+  <Step title="Form submission">
+    The form submits to a server action that calls Supabase Auth:
+    
+    ```typescript
+    const { error } = await supabase.auth.signInWithPassword({
+      email: credentials.identifier,
+      password: credentials.password,
+    })
+    ```
+  </Step>
+  
+  <Step title="Session creation">
+    On success, Supabase creates a session and sets authentication cookies.
+  </Step>
+  
+  <Step title="Redirect to dashboard">
+    The user is redirected to the dashboard or their original destination.
+  </Step>
+</Steps>
+
+## Security Considerations
+
+<Warning>
+  **Important security notes:**
+  
+  - Never expose `SUPABASE_SERVICE_ROLE_KEY` in client-side code
+  - Always validate user permissions on the server side
+  - Use Row Level Security (RLS) policies in Supabase for data protection
+  - Implement proper role checks before allowing sensitive operations
+</Warning>
+
+### Row Level Security
+
+Consider implementing RLS policies in Supabase to restrict data access:
+
+```sql
+-- Example: Users can only see sales from their assigned branches
+CREATE POLICY "Users can view sales from their branches"
+  ON public.sale
+  FOR SELECT
+  USING (
+    branch_id IN (
+      SELECT branch_id 
+      FROM public.branch_user 
+      WHERE user_id = auth.uid()
+    )
+  );
+```
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Redirected to /login after logging in">
+    This usually means:
+    - Session cookie is not being set properly
+    - Environment variables are incorrect
+    - The user profile was not created
+    
+    Check:
+    1. Verify environment variables are correct
+    2. Check browser console for errors
+    3. Verify user exists in both `auth.users` and `user_profile`
+  </Accordion>
+  
+  <Accordion title="Cannot create user - ID already exists">
+    The user ID must match between `auth.users` and `user_profile`. If you see this error:
+    - Use the exact UUID from the auth user creation
+    - Do not generate a new UUID for the user profile
+  </Accordion>
+  
+  <Accordion title="User has no access after login">
+    Verify the user is assigned to at least one branch:
+    
+    ```sql
+    SELECT * FROM public.branch_user WHERE user_id = '<user-id>';
+    ```
+    
+    If no rows are returned, assign them to a branch using the SQL from step 5 above.
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Branch Setup" icon="building" href="/setup/branch-setup">
+    Create branches and assign users
+  </Card>
+  <Card title="Database Schema" icon="database" href="/setup/database-schema">
+    Learn about the database structure
+  </Card>
+</CardGroup>

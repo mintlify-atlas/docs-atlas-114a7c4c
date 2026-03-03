@@ -1,0 +1,431 @@
+---
+title: Coding Standards
+description: Code style, conventions, and best practices for Pramukh Men's Wear
+---
+
+This document outlines the coding standards and conventions used in the Pramukh Men's Wear codebase.
+
+## TypeScript Configuration
+
+The project uses strict TypeScript configuration for type safety:
+
+### Compiler Options
+
+```json
+{
+  "compilerOptions": {
+    "target": "ES2017",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "isolatedModules": true
+  }
+}
+```
+
+### Path Aliases
+
+The project uses `@/` as an alias for the root directory:
+
+```typescript
+import { createClient } from "@/utils/supabase/server";
+import { Button } from "@/components/ui/button";
+import { createBranch } from "@/app/(app)/branches/actions";
+```
+
+<Note>
+  Always use the `@/` path alias instead of relative imports for better maintainability.
+</Note>
+
+## ESLint Configuration
+
+The project uses ESLint with Next.js recommended configurations:
+
+```javascript
+import { defineConfig, globalIgnores } from "eslint/config";
+import nextVitals from "eslint-config-next/core-web-vitals";
+import nextTs from "eslint-config-next/typescript";
+
+const eslintConfig = defineConfig([
+  ...nextVitals,
+  ...nextTs,
+  globalIgnores([
+    ".next/**",
+    "out/**",
+    "build/**",
+    "next-env.d.ts",
+  ]),
+]);
+```
+
+### Running the Linter
+
+Before committing code, always run:
+
+```bash
+pnpm lint
+```
+
+## Code Organization
+
+### Directory Structure
+
+Follow these conventions for organizing code:
+
+#### App Routes
+
+Organize routes using Next.js App Router conventions:
+
+```
+app/
+├── (app)/              # Authenticated routes
+│   ├── dashboard/
+│   ├── inventory/
+│   │   ├── page.tsx    # Main inventory page
+│   │   ├── actions.ts  # Server actions
+│   │   └── categories/
+│   │       └── page.tsx
+│   └── layout.tsx      # Shared layout
+└── (auth)/             # Public auth routes
+    └── login/
+        └── page.tsx
+```
+
+#### Components
+
+Separate reusable UI components from app-specific components:
+
+```
+components/
+├── ui/                 # Generic, reusable UI components
+│   ├── button.tsx
+│   ├── dialog.tsx
+│   └── form.tsx
+└── app/                # Application-specific components
+    ├── branch-switcher.tsx
+    ├── add-branch-dialog.tsx
+    └── sidebar-nav.tsx
+```
+
+#### Server Code
+
+Organize server-side logic:
+
+```
+lib/
+├── server/
+│   └── app-context.ts  # Server-only utilities
+├── types/
+│   ├── inventory.ts    # Type definitions
+│   └── pos.ts
+└── utils.ts            # Shared utilities
+
+utils/
+└── supabase/
+    ├── server.ts       # Server-side Supabase client
+    └── client.ts       # Client-side Supabase client
+```
+
+## Naming Conventions
+
+### Files and Directories
+
+- **Components**: Use kebab-case for files (e.g., `add-branch-dialog.tsx`)
+- **Pages**: Use `page.tsx` for route pages (Next.js convention)
+- **Actions**: Use `actions.ts` for server actions
+- **Types**: Use `.ts` extension for type-only files
+
+### Variables and Functions
+
+- **Components**: PascalCase (e.g., `AddBranchDialog`, `BranchSwitcher`)
+- **Functions**: camelCase (e.g., `createBranch`, `getAppContext`)
+- **Constants**: UPPER_SNAKE_CASE for true constants (e.g., `MAX_ITEMS`)
+- **Types/Interfaces**: PascalCase (e.g., `AppContext`, `BranchSummary`)
+
+### Database
+
+- **Tables**: snake_case (e.g., `branch_user`, `user_profile`)
+- **Columns**: snake_case (e.g., `full_name`, `base_price`)
+
+## Component Patterns
+
+### Server Actions
+
+All server actions should:
+- Use `"use server"` directive
+- Be placed in `actions.ts` files
+- Accept `FormData` parameters
+- Call `revalidatePath` after mutations
+- Handle errors appropriately
+
+```typescript
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { createClient } from "@/utils/supabase/server";
+
+export async function createBranch(formData: FormData) {
+  const supabase = await createClient();
+
+  const code = String(formData.get("code") ?? "").trim().toUpperCase();
+  const name = String(formData.get("name") ?? "").trim();
+
+  if (!code || !name) {
+    throw new Error("Branch code and name are required");
+  }
+
+  const { error } = await supabase.from("branch").insert({
+    code,
+    name,
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  revalidatePath("/branches");
+  return { success: true } as const;
+}
+```
+
+### Client Components
+
+Client components should:
+- Use `"use client"` directive at the top
+- Utilize React hooks (useState, useTransition, etc.)
+- Handle form validation with Zod and React Hook Form
+- Display toast notifications for user feedback
+
+```typescript
+"use client";
+
+import { useEffect, useState, useTransition } from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { toast } from "sonner";
+
+const schema = z.object({
+  code: z.string().min(2, "Code must be at least 2 characters"),
+  name: z.string().min(1, "Name is required"),
+});
+
+type FormValues = z.infer<typeof schema>;
+
+export function AddBranchDialog() {
+  const [open, setOpen] = useState(false);
+  const [isPending, startTransition] = useTransition();
+
+  const form = useForm<FormValues>({
+    resolver: zodResolver(schema),
+    defaultValues: {
+      code: "",
+      name: "",
+    },
+  });
+
+  const onSubmit = (values: FormValues) => {
+    startTransition(async () => {
+      try {
+        await createBranch(formData);
+        toast.success("Branch created");
+        form.reset();
+        setOpen(false);
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "Failed");
+      }
+    });
+  };
+
+  return (
+    // Component JSX
+  );
+}
+```
+
+### Type Definitions
+
+Define types for complex data structures:
+
+```typescript
+export type ItemVariantRow = {
+  id: string;
+  sku: string;
+  size_label: string;
+  base_price: number | null;
+  base_cost: number | null;
+};
+
+export type ItemListRow = {
+  id: string;
+  code: string;
+  name: string;
+  category: { name: string } | null;
+  item_variant: ItemVariantRow[];
+};
+```
+
+## Form Validation
+
+### Zod Schemas
+
+Use Zod for runtime validation:
+
+```typescript
+const branchSchema = z.object({
+  code: z
+    .string()
+    .trim()
+    .min(2, "Code must be at least 2 characters")
+    .max(6, "Code must be at most 6 characters")
+    .transform((value) => value.toUpperCase()),
+  name: z.string().min(1, "Name is required"),
+  email: z
+    .string()
+    .trim()
+    .refine(
+      (value) => value === "" || z.string().email().safeParse(value).success,
+      { message: "Enter a valid email address" }
+    ),
+});
+```
+
+### React Hook Form
+
+Integrate Zod with React Hook Form:
+
+```typescript
+const form = useForm<FormValues>({
+  resolver: zodResolver(branchSchema),
+  defaultValues: {
+    code: "",
+    name: "",
+  },
+});
+```
+
+## Database Access
+
+### Supabase Client
+
+Always use the appropriate Supabase client:
+
+```typescript
+// Server components and actions
+import { createClient } from "@/utils/supabase/server";
+
+const supabase = await createClient();
+
+// Client components
+import { createClient } from "@/utils/supabase/client";
+
+const supabase = createClient();
+```
+
+### Query Patterns
+
+```typescript
+// Select with joins
+const { data, error } = await supabase
+  .from("branch_user")
+  .select("branch:branch_id (id, code, name)")
+  .eq("user_id", user.id)
+  .returns<{ branch: BranchSummary | null }[]>();
+
+// Insert
+const { error } = await supabase.from("branch").insert({
+  code,
+  name,
+});
+
+// Update
+const { error } = await supabase
+  .from("branch")
+  .update({ code, name })
+  .eq("id", id);
+
+// Delete
+const { error } = await supabase
+  .from("branch")
+  .delete()
+  .eq("id", id);
+```
+
+## Styling
+
+### Tailwind CSS
+
+Use Tailwind utility classes:
+
+```typescript
+<Button className="tracking-[0.2em] uppercase">
+  Add Branch
+</Button>
+```
+
+### Class Merging
+
+Use the `cn()` utility for conditional classes:
+
+```typescript
+import { cn } from "@/lib/utils";
+
+<div className={cn(
+  "flex items-center",
+  isActive && "bg-primary",
+  className
+)}>
+```
+
+## Best Practices
+
+### Error Handling
+
+- Always handle Supabase errors
+- Provide user-friendly error messages
+- Use toast notifications for feedback
+
+### Performance
+
+- Use `useTransition` for async operations
+- Call `revalidatePath` after mutations
+- Leverage Next.js caching strategies
+
+### Security
+
+- Validate all user input with Zod
+- Sanitize data before database operations
+- Use environment variables for secrets
+- Never expose service role keys to the client
+
+### Accessibility
+
+- Use semantic HTML elements
+- Include proper ARIA labels
+- Ensure keyboard navigation works
+- Use Radix UI components for built-in accessibility
+
+## Git Workflow
+
+1. Create a feature branch from `main`
+2. Make your changes following these standards
+3. Run `pnpm lint` before committing
+4. Write clear, descriptive commit messages
+5. Create a pull request for review
+
+## Code Review Checklist
+
+Before submitting code for review, ensure:
+
+- [ ] TypeScript types are properly defined
+- [ ] ESLint passes with no errors
+- [ ] Forms use Zod validation
+- [ ] Server actions include error handling
+- [ ] Path aliases (`@/`) are used consistently
+- [ ] Components follow naming conventions
+- [ ] Code is properly formatted
+- [ ] No sensitive data is hardcoded

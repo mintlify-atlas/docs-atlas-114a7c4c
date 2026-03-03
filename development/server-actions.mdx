@@ -1,0 +1,587 @@
+---
+title: 'Server Actions'
+description: 'Next.js server actions for form handling and data mutations'
+---
+
+## Overview
+
+Server actions are server-side functions that handle form submissions and data mutations. They're defined with the `"use server"` directive and are organized in `actions.ts` files within each feature module.
+
+## File Organization
+
+Server actions are colocated with the pages that use them:
+
+```
+app/(app)/
+├── actions.ts              # Root-level actions (auth, branch switching)
+├── branches/
+│   └── actions.ts          # Branch CRUD operations
+├── customers/
+│   └── actions.ts          # Customer CRUD operations
+├── inventory/
+│   └── actions.ts          # Inventory management
+├── vendors/
+│   └── actions.ts          # Vendor management
+└── purchases/
+    └── actions.ts          # Purchase operations
+```
+
+## Basic Pattern
+
+All server action files follow this structure:
+
+```typescript
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { createClient } from "@/utils/supabase/server";
+
+export async function createResource(formData: FormData) {
+  const supabase = await createClient();
+  
+  // 1. Extract and validate form data
+  const field = String(formData.get("field") ?? "").trim();
+  
+  if (!field) {
+    throw new Error("Field is required");
+  }
+  
+  // 2. Perform database operation
+  const { error } = await supabase.from("table").insert({ field });
+  
+  if (error) {
+    throw error;
+  }
+  
+  // 3. Revalidate affected pages
+  revalidatePath("/path");
+  
+  return { success: true } as const;
+}
+```
+
+## Real Examples
+
+### Branch Management
+
+From `app/(app)/branches/actions.ts`:
+
+```typescript
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { createClient } from "@/utils/supabase/server";
+
+export async function createBranch(formData: FormData) {
+  const supabase = await createClient();
+
+  const code = String(formData.get("code") ?? "").trim().toUpperCase();
+  const name = String(formData.get("name") ?? "").trim();
+  const address = String(formData.get("address") ?? "").trim() || null;
+  const phone = String(formData.get("phone") ?? "").trim() || null;
+  const email = String(formData.get("email") ?? "").trim() || null;
+
+  if (!code || !name) {
+    throw new Error("Branch code and name are required");
+  }
+
+  const { error } = await supabase.from("branch").insert({
+    code,
+    name,
+    address,
+    phone,
+    email,
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  revalidatePath("/branches");
+  return { success: true } as const;
+}
+
+export async function updateBranch(formData: FormData) {
+  const supabase = await createClient();
+
+  const id = String(formData.get("id") ?? "").trim();
+  const code = String(formData.get("code") ?? "").trim().toUpperCase();
+  const name = String(formData.get("name") ?? "").trim();
+  const address = String(formData.get("address") ?? "").trim() || null;
+  const phone = String(formData.get("phone") ?? "").trim() || null;
+  const email = String(formData.get("email") ?? "").trim() || null;
+
+  if (!id) {
+    throw new Error("Branch id is required");
+  }
+
+  if (!code || !name) {
+    throw new Error("Branch code and name are required");
+  }
+
+  const { error } = await supabase
+    .from("branch")
+    .update({
+      code,
+      name,
+      address,
+      phone,
+      email,
+    })
+    .eq("id", id);
+
+  if (error) {
+    throw error;
+  }
+
+  revalidatePath("/branches");
+  return { success: true } as const;
+}
+
+export async function deleteBranch(formData: FormData) {
+  const supabase = await createClient();
+
+  const id = String(formData.get("id") ?? "").trim();
+
+  if (!id) {
+    throw new Error("Branch id is required");
+  }
+
+  const { error } = await supabase.from("branch").delete().eq("id", id);
+
+  if (error) {
+    throw error;
+  }
+
+  revalidatePath("/branches");
+  return { success: true } as const;
+}
+```
+
+### Customer Management
+
+From `app/(app)/customers/actions.ts`:
+
+```typescript
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { createClient } from "@/utils/supabase/server";
+
+export async function createCustomer(formData: FormData) {
+  const supabase = await createClient();
+  const fullName = String(formData.get("full_name") ?? "").trim();
+  const phone = String(formData.get("phone") ?? "").trim() || null;
+  const email = String(formData.get("email") ?? "").trim() || null;
+  const notes = String(formData.get("notes") ?? "").trim() || null;
+
+  if (!fullName) {
+    throw new Error("Customer name is required");
+  }
+
+  const { error } = await supabase.from("customer").insert({
+    full_name: fullName,
+    phone,
+    email,
+    notes,
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  revalidatePath("/customers");
+  return { success: true } as const;
+}
+
+export async function updateCustomer(formData: FormData) {
+  const supabase = await createClient();
+
+  const id = String(formData.get("id") ?? "").trim();
+  const fullName = String(formData.get("full_name") ?? "").trim();
+  const phone = String(formData.get("phone") ?? "").trim() || null;
+  const email = String(formData.get("email") ?? "").trim() || null;
+  const notes = String(formData.get("notes") ?? "").trim() || null;
+
+  if (!id) {
+    throw new Error("Customer id is required");
+  }
+  if (!fullName) {
+    throw new Error("Customer name is required");
+  }
+
+  const { error } = await supabase
+    .from("customer")
+    .update({ full_name: fullName, phone, email, notes })
+    .eq("id", id);
+
+  if (error) {
+    throw error;
+  }
+
+  revalidatePath("/customers");
+  return { success: true } as const;
+}
+
+export async function deleteCustomer(formData: FormData) {
+  const supabase = await createClient();
+
+  const id = String(formData.get("id") ?? "").trim();
+
+  if (!id) {
+    throw new Error("Customer id is required");
+  }
+
+  const { error } = await supabase.from("customer").delete().eq("id", id);
+
+  if (error) {
+    throw error;
+  }
+
+  revalidatePath("/customers");
+  return { success: true } as const;
+}
+```
+
+### Inventory Management with Context
+
+From `app/(app)/inventory/actions.ts:177`, showing use of app context:
+
+```typescript
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+import { createClient } from "@/utils/supabase/server";
+import { getAppContext } from "@/lib/server/app-context";
+
+export async function createItem(formData: FormData) {
+  const { activeBranch } = await getAppContext();
+  if (!activeBranch) {
+    throw new Error("Cannot create item without an active branch");
+  }
+
+  const supabase = await createClient();
+
+  const name = String(formData.get("name") ?? "").trim();
+  const code = String(formData.get("code") ?? "").trim();
+  const categoryId = String(formData.get("categoryId") ?? "").trim() || null;
+  const description = String(formData.get("description") ?? "").trim() || null;
+  const sku = String(formData.get("sku") ?? "").trim();
+  const sizeLabel = String(formData.get("size_label") ?? "").trim();
+  const colorId = String(formData.get("color_id") ?? "").trim() || null;
+  const baseCost = parseNumber(formData.get("base_cost"));
+  const basePrice = parseNumber(formData.get("base_price"));
+
+  if (!name || !code || !sku || !sizeLabel) {
+    throw new Error("Name, code, sku, and size are required");
+  }
+
+  // Create item
+  const { data: itemData, error: itemError } = await supabase
+    .from("item")
+    .insert({
+      name,
+      code,
+      category_id: categoryId,
+      description,
+    })
+    .select("id")
+    .single();
+
+  if (itemError) {
+    throw itemError;
+  }
+
+  // Create variant
+  const { error: variantError } = await supabase.from("item_variant").insert({
+    item_id: itemData.id,
+    sku,
+    size_label: sizeLabel,
+    color_id: colorId,
+    base_cost: baseCost,
+    base_price: basePrice,
+  });
+
+  if (variantError) {
+    throw variantError;
+  }
+
+  revalidatePath("/inventory");
+  redirect("/inventory");
+}
+```
+
+### Authentication Actions
+
+From `app/(auth)/login/actions.ts`:
+
+```typescript
+"use server";
+
+import { redirect } from "next/navigation";
+import { createClient } from "@/utils/supabase/server";
+
+type SignInState = {
+  error?: string;
+};
+
+const EMAIL_REGEX = /.+@.+\..+/;
+
+function parseCredentials(formData: FormData) {
+  const identifier = String(formData.get("identifier") ?? "").trim();
+  const password = String(formData.get("password") ?? "").trim();
+
+  if (!identifier) {
+    return { error: "Please enter your email or mobile number." } as const;
+  }
+
+  if (!password) {
+    return { error: "Please enter your password." } as const;
+  }
+
+  if (password.length < 6) {
+    return { error: "Password must be at least 6 characters long." } as const;
+  }
+
+  if (EMAIL_REGEX.test(identifier)) {
+    return { email: identifier, password } as const;
+  }
+
+  const phone = identifier.replace(/\s+/g, "");
+  if (!/^[0-9+]+$/.test(phone)) {
+    return {
+      error: "Enter a valid phone number (digits and optional + only).",
+    } as const;
+  }
+
+  return { phone, password } as const;
+}
+
+export async function signIn(_: SignInState, formData: FormData): Promise<SignInState> {
+  const credentials = parseCredentials(formData);
+
+  if ("error" in credentials) {
+    return { error: credentials.error };
+  }
+
+  const supabase = await createClient();
+
+  const { error } = await supabase.auth.signInWithPassword(credentials);
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  redirect("/dashboard");
+}
+```
+
+## Form Data Extraction Patterns
+
+### Required Fields
+
+```typescript
+const name = String(formData.get("name") ?? "").trim();
+
+if (!name) {
+  throw new Error("Name is required");
+}
+```
+
+### Optional Fields (null fallback)
+
+```typescript
+const description = String(formData.get("description") ?? "").trim() || null;
+```
+
+### Transformations
+
+```typescript
+// Uppercase
+const code = String(formData.get("code") ?? "").trim().toUpperCase();
+
+// Number parsing
+function parseNumber(value: FormDataEntryValue | null) {
+  if (typeof value !== "string") return null;
+  const parsed = Number.parseFloat(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+const price = parseNumber(formData.get("price"));
+```
+
+### Hex Color Normalization
+
+From `app/(app)/inventory/actions.ts:15`:
+
+```typescript
+function normaliseHex(value: string) {
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  if (/^#[0-9a-fA-F]{6}$/.test(trimmed)) {
+    return trimmed.toUpperCase();
+  }
+  const withHash = `#${trimmed.replace(/^#/, "")}`;
+  return /^#[0-9a-fA-F]{6}$/.test(withHash) ? withHash.toUpperCase() : null;
+}
+
+const hexValue = normaliseHex(String(formData.get("hex_value") ?? ""));
+```
+
+## Error Handling
+
+### Validation Errors
+
+```typescript
+if (!field) {
+  throw new Error("Field is required");
+}
+```
+
+### Database Errors
+
+```typescript
+const { error } = await supabase.from("table").insert(data);
+
+if (error) {
+  throw error;
+}
+```
+
+Errors propagate to the client and can be caught in form submission handlers.
+
+## Cache Revalidation
+
+### Single Path
+
+```typescript
+revalidatePath("/customers");
+```
+
+### Multiple Paths
+
+From `app/(app)/actions.ts:28`:
+
+```typescript
+const paths = ["/dashboard", "/pos", "/inventory", "/customers", "/vendors", "/purchases"];
+paths.forEach((path) => revalidatePath(path));
+```
+
+### With Redirect
+
+```typescript
+revalidatePath("/inventory");
+redirect("/inventory");
+```
+
+## Return Values
+
+### Success Object
+
+```typescript
+return { success: true } as const;
+```
+
+### Error State (useFormState)
+
+```typescript
+type State = {
+  error?: string;
+};
+
+export async function action(_: State, formData: FormData): Promise<State> {
+  // Validation
+  if (!field) {
+    return { error: "Field is required" };
+  }
+  
+  // Operation
+  const { error } = await supabase.from("table").insert(data);
+  
+  if (error) {
+    return { error: error.message };
+  }
+  
+  redirect("/success");
+}
+```
+
+## Usage in Components
+
+### Basic Form
+
+```typescript
+import { createBranch } from "./actions";
+
+function BranchForm() {
+  return (
+    <form action={createBranch}>
+      <input name="code" required />
+      <input name="name" required />
+      <button type="submit">Create Branch</button>
+    </form>
+  );
+}
+```
+
+### With useFormState
+
+```typescript
+import { useFormState } from "react-dom";
+import { signIn } from "./actions";
+
+function LoginForm() {
+  const [state, formAction] = useFormState(signIn, { error: undefined });
+  
+  return (
+    <form action={formAction}>
+      {state.error && <p>{state.error}</p>}
+      <input name="identifier" required />
+      <input name="password" type="password" required />
+      <button type="submit">Sign In</button>
+    </form>
+  );
+}
+```
+
+### With useFormStatus
+
+```typescript
+import { useFormStatus } from "react-dom";
+
+function SubmitButton() {
+  const { pending } = useFormStatus();
+  
+  return (
+    <button type="submit" disabled={pending}>
+      {pending ? "Saving..." : "Save"}
+    </button>
+  );
+}
+```
+
+## Best Practices
+
+1. **Always use "use server"** - Place at the top of action files
+2. **Validate input** - Check required fields before database operations
+3. **Handle errors** - Throw or return errors for client handling
+4. **Revalidate paths** - Update cache after mutations
+5. **Use FormData** - Accept `FormData` parameter for form integration
+6. **Type return values** - Use `as const` for success objects
+7. **Colocate actions** - Keep actions with related pages
+8. **Trim strings** - Always trim string inputs
+9. **Null vs undefined** - Use `null` for optional database fields
+10. **Use app context** - Load branch/user context when needed
+
+## Security
+
+- Server actions only run on the server (never exposed to client)
+- Authentication is enforced through `getAppContext()` in protected actions
+- Validation prevents invalid data from reaching the database
+- Supabase Row Level Security provides additional authorization layer
+
+## Related
+
+- [App Context](/development/app-context) - Using authenticated context in actions
+- [Project Structure](/development/project-structure) - Where actions files live

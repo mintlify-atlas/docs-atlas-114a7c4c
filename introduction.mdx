@@ -1,0 +1,213 @@
+---
+title: Introduction
+description: Welcome to Pramukh Men's Wear - A modern multi-branch retail POS and inventory management system
+---
+
+<Note>
+  Pramukh Men's Wear is a production-ready retail management system built with Next.js 16, Supabase, and modern React patterns.
+</Note>
+
+## What is Pramukh Men's Wear?
+
+Pramukh Men's Wear is a comprehensive retail management system designed for multi-branch clothing stores. It provides a complete solution for inventory management, point-of-sale operations, customer relationship management, and business analytics.
+
+Built with modern technologies including Next.js App Router, Supabase for real-time database operations, and a beautiful Tailwind-based UI, the system offers a seamless experience for retail operations across multiple branches.
+
+## Key features
+
+<CardGroup cols={2}>
+  <Card title="Multi-branch management" icon="store">
+    Manage multiple retail locations from a single system. Branch-specific inventory, sales tracking, and user role assignments with real-time synchronization.
+  </Card>
+  
+  <Card title="Point of sale (POS)" icon="cash-register">
+    Streamlined billing counter for quick sales processing. Support for multiple payment methods (cash, UPI, card), partial payments, and outstanding dues tracking.
+  </Card>
+  
+  <Card title="Inventory management" icon="boxes-stacked">
+    Complete inventory control with categories, items, variants, sizes, and colors. Track stock levels across branches with automatic updates on purchases and sales.
+  </Card>
+  
+  <Card title="Customer & vendor management" icon="users">
+    Maintain customer profiles with purchase history and outstanding dues. Vendor management with purchase orders and payment tracking.
+  </Card>
+  
+  <Card title="Returns & exchanges" icon="rotate">
+    Handle product returns and exchanges with full transaction history. Track return reasons and manage inventory adjustments automatically.
+  </Card>
+  
+  <Card title="Real-time dashboard" icon="chart-line">
+    Monitor sales, revenue, outstanding dues, and purchase spend in real-time. Branch-specific analytics with summary cards and quick actions.
+  </Card>
+</CardGroup>
+
+## Technology stack
+
+Pramukh Men's Wear is built with a modern, production-ready technology stack:
+
+<AccordionGroup>
+  <Accordion title="Frontend framework">
+    **Next.js 16** with App Router, React 19, and TypeScript for type-safe development. Server components for optimal performance and SEO.
+  </Accordion>
+  
+  <Accordion title="Database & authentication">
+    **Supabase** provides PostgreSQL database with Row Level Security (RLS), real-time subscriptions, and built-in authentication using `@supabase/ssr`.
+  </Accordion>
+  
+  <Accordion title="UI components">
+    Tailwind CSS 4 with Radix UI primitives for accessible, customizable components. Includes shadcn/ui-inspired components with dark mode support.
+  </Accordion>
+  
+  <Accordion title="Form handling">
+    React Hook Form with Zod for schema validation and `@hookform/resolvers` for seamless integration.
+  </Accordion>
+</AccordionGroup>
+
+## Core modules
+
+### Dashboard
+
+The dashboard provides an at-a-glance view of your retail operations:
+
+- **Sales metrics**: Total sales count and revenue by branch
+- **Outstanding dues**: Track pending payments from credit customers
+- **Customer base**: Total unique customers across the system
+- **Purchase spend**: Inventory investment from vendors
+- **Branch assignments**: Switch between branches with role-based access
+- **Quick actions**: Jump to billing, inventory, or reporting workflows
+
+### Inventory system
+
+Comprehensive inventory management includes:
+
+- **Categories**: Organize products by type (shirts, trousers, accessories) with size type configuration (alpha, numeric, free size)
+- **Items**: Product master data with codes, names, and descriptions
+- **Variants**: SKU-level tracking with size, color, base cost, and selling price
+- **Colors**: Maintain color catalog with hex values for visual reference
+- **Stock tracking**: Real-time stock levels updated via purchases and sales
+
+### Sales & POS
+
+Streamlined point-of-sale operations:
+
+- **Quick billing**: Fast invoice generation with automatic calculations
+- **Payment methods**: Support for cash, UPI, card, and other payment types
+- **Partial payments**: Track paid amounts and outstanding dues per sale
+- **Customer association**: Link sales to customer profiles for history tracking
+- **Sale items**: Line-item detail with quantity, price, and discount support
+- **Recent sales view**: Live table of latest transactions with status
+
+### Purchases
+
+Vendor and procurement management:
+
+- **Purchase orders**: Record incoming inventory with invoice tracking
+- **Vendor management**: Maintain supplier database with contact details and GST numbers
+- **Purchase items**: Line-item tracking with quantity, cost, and discounts
+- **Vendor payments**: Payment history with method and reference tracking
+- **Branch allocation**: Assign purchases to specific branch locations
+
+### Customer management
+
+Build customer relationships:
+
+- **Customer profiles**: Full name, phone, email, and notes
+- **Purchase history**: View all sales linked to each customer
+- **Payment tracking**: Monitor outstanding dues and payment schedules
+- **Customer payments**: Record payments against specific sales or general account credits
+
+### Returns & exchanges
+
+Handle post-sale transactions:
+
+- **Return transactions**: Process product returns with refund amounts
+- **Exchanges**: Swap returned items for new products
+- **Return reasons**: Track why products are returned for quality insights
+- **Inventory adjustments**: Automatically update stock on returns/exchanges
+- **Transaction linking**: Connect returns to original sale records
+
+## User roles & permissions
+
+The system supports three role levels per branch:
+
+<Steps>
+  <Step title="Owner">
+    Full system access including branch creation, user management, and all operational features. Can manage configurations and view cross-branch reports.
+  </Step>
+  
+  <Step title="Manager">
+    Branch-level management with access to inventory, purchases, sales reports, and customer management. Cannot modify system configurations or create branches.
+  </Step>
+  
+  <Step title="Cashier">
+    Point-of-sale operations only. Can process sales, accept payments, and view recent transactions. Limited access to reports and no inventory modification rights.
+  </Step>
+</Steps>
+
+<Warning>
+  Users can be assigned different roles across different branches. For example, a user might be an Owner at the main showroom but a Manager at a satellite location.
+</Warning>
+
+## Database architecture
+
+The system uses a relational PostgreSQL database with the following key tables:
+
+```sql
+-- Core entities
+branch              -- Retail locations
+user_profile        -- User accounts linked to Supabase auth
+branch_user         -- User-to-branch role assignments
+
+-- Inventory
+category            -- Product categories with size types
+color               -- Color catalog
+item                -- Product master
+item_variant        -- SKU-level with size, color, pricing
+
+-- Purchasing
+vendor              -- Supplier database
+purchase            -- Purchase orders
+purchase_item       -- Purchase line items
+vendor_payment      -- Vendor payment tracking
+
+-- Sales
+customer            -- Customer profiles
+sale                -- Sales invoices
+sale_item           -- Sale line items
+customer_payment    -- Customer payment tracking
+
+-- Returns
+return_transaction  -- Return/exchange header
+return_item         -- Returned items
+exchange_item       -- Exchanged items
+```
+
+All tables include audit timestamps (`created_at`, `updated_at`) with automatic triggers for consistency.
+
+## Get started
+
+<CardGroup cols={2}>
+  <Card title="Quickstart guide" icon="rocket" href="/quickstart">
+    Set up your development environment and run the system locally in under 10 minutes.
+  </Card>
+  
+  <Card title="Deployment guide" icon="cloud" href="/deployment">
+    Deploy to production with Vercel and Supabase. Environment variables, migrations, and hosting setup.
+  </Card>
+  
+  <Card title="Database schema" icon="database" href="/setup/database-schema">
+    Deep dive into the PostgreSQL schema, relationships, and data types.
+  </Card>
+  
+  <Card title="Development guide" icon="code" href="/development/project-structure">
+    Explore the codebase structure, server actions, and component patterns.
+  </Card>
+</CardGroup>
+
+## Need help?
+
+<Tip>
+  The system includes comprehensive inline documentation in the source code. Check `supabase/migrations/0001_initial_schema.sql` for the complete database schema definition.
+</Tip>
+
+For questions or issues, review the source code comments and TypeScript types which provide detailed context for each module and function.

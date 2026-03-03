@@ -1,0 +1,394 @@
+---
+title: Branch Setup
+description: Create and configure branches, and assign users to them
+---
+
+Pramukh Men's Wear supports multiple branch locations. Each branch operates independently with its own inventory, sales, and assigned staff.
+
+## Understanding Branches
+
+Branches represent physical showroom locations. Each branch:
+
+- Has a unique code and name
+- Maintains separate inventory counts
+- Records sales independently
+- Has its own staff assignments
+- Can have users with different roles
+
+## Branch Structure
+
+The branch system uses two main tables:
+
+<CardGroup cols={2}>
+  <Card title="branch" icon="building">
+    Stores branch information:
+    - Branch code (unique identifier)
+    - Name and contact details
+    - Address information
+    
+    See `/supabase/migrations/0001_initial_schema.sql:11-20`
+  </Card>
+  
+  <Card title="branch_user" icon="users">
+    Maps users to branches:
+    - Which users work at which branch
+    - What role they have at that branch
+    - One user can work at multiple branches
+    
+    See `/supabase/migrations/0001_initial_schema.sql:34-41`
+  </Card>
+</CardGroup>
+
+## Creating Your First Branch
+
+Follow these steps to set up your initial branch:
+
+<Steps>
+  <Step title="Create the branch record">
+    Insert a branch into the database:
+    
+    ```bash
+    supabase db query "INSERT INTO public.branch (code, name, address) \
+      VALUES ('main', 'Main Showroom', '123 Fashion Street, City');"
+    ```
+    
+    <ParamField path="code" type="string" required>
+      A short, unique identifier for the branch (e.g., 'main', 'downtown', 'mall')
+    </ParamField>
+    
+    <ParamField path="name" type="string" required>
+      The display name of the branch (e.g., 'Main Showroom', 'Downtown Branch')
+    </ParamField>
+    
+    <ParamField path="address" type="string">
+      Full address of the branch location (optional)
+    </ParamField>
+  </Step>
+  
+  <Step title="Verify branch creation">
+    Check that the branch was created successfully:
+    
+    ```bash
+    supabase db query "SELECT * FROM public.branch;"
+    ```
+    
+    You should see your new branch in the results.
+  </Step>
+  
+  <Step title="Add contact information (optional)">
+    Update the branch with phone and email if needed:
+    
+    ```sql
+    UPDATE public.branch 
+    SET phone = '+1-555-0100', 
+        email = 'main@pramukh.local'
+    WHERE code = 'main';
+    ```
+  </Step>
+</Steps>
+
+## Assigning Users to Branches
+
+After creating a branch and user profile, assign users to work at that branch:
+
+<Steps>
+  <Step title="Get user and branch IDs">
+    First, retrieve the UUIDs for your user and branch:
+    
+    ```bash
+    # Get user ID
+    supabase db query "SELECT id, full_name FROM public.user_profile;"
+    
+    # Get branch ID
+    supabase db query "SELECT id, code, name FROM public.branch;"
+    ```
+    
+    Copy the IDs you need for the next step.
+  </Step>
+  
+  <Step title="Create the assignment">
+    Assign the user to the branch with a specific role:
+    
+    ```bash
+    supabase db query "INSERT INTO public.branch_user (branch_id, user_id, role) \
+      VALUES ('<branch-id>', '<user-id>', 'owner');"
+    ```
+    
+    Or use a join query to assign by code:
+    
+    ```bash
+    supabase db query "INSERT INTO public.branch_user (branch_id, user_id, role) \
+      SELECT b.id, u.id, 'owner' \
+      FROM public.branch b \
+      JOIN public.user_profile u ON u.id = '<user-id>' \
+      WHERE b.code = 'main';"
+    ```
+    
+    <Note>
+      This is the same SQL from the README at `/README.md:40`
+    </Note>
+  </Step>
+  
+  <Step title="Verify the assignment">
+    Check that the user is assigned:
+    
+    ```sql
+    SELECT 
+      b.name AS branch_name,
+      u.full_name AS user_name,
+      bu.role
+    FROM public.branch_user bu
+    JOIN public.branch b ON bu.branch_id = b.id
+    JOIN public.user_profile u ON bu.user_id = u.id;
+    ```
+  </Step>
+</Steps>
+
+## Role Assignment
+
+When assigning users to branches, you must specify a role:
+
+<Tabs>
+  <Tab title="Owner">
+    Full administrative access to the branch:
+    
+    ```sql
+    INSERT INTO public.branch_user (branch_id, user_id, role)
+    VALUES ('<branch-id>', '<user-id>', 'owner');
+    ```
+    
+    Owners can:
+    - Manage all inventory
+    - View all reports
+    - Configure branch settings
+    - Manage other users
+    - Process all transactions
+  </Tab>
+  
+  <Tab title="Manager">
+    Branch management access:
+    
+    ```sql
+    INSERT INTO public.branch_user (branch_id, user_id, role)
+    VALUES ('<branch-id>', '<user-id>', 'manager');
+    ```
+    
+    Managers can:
+    - Manage inventory
+    - Create purchases
+    - View branch reports
+    - Process all transactions
+    - Cannot manage users or system settings
+  </Tab>
+  
+  <Tab title="Cashier">
+    Point of sale access only:
+    
+    ```sql
+    INSERT INTO public.branch_user (branch_id, user_id, role)
+    VALUES ('<branch-id>', '<user-id>', 'cashier');
+    ```
+    
+    Cashiers can:
+    - Process sales
+    - Accept payments
+    - Handle returns/exchanges
+    - View inventory
+    - Cannot manage inventory or view reports
+  </Tab>
+</Tabs>
+
+## Complete Setup Example
+
+Here's a complete example of setting up a branch with an owner user:
+
+```bash
+# 1. Create auth user
+supabase auth signups create \
+  --email owner@pramukh.local \
+  --password SecurePass123!
+
+# Note the returned user ID, e.g., '550e8400-e29b-41d4-a716-446655440000'
+
+# 2. Create user profile
+supabase db query "INSERT INTO public.user_profile (id, full_name, role) \
+  VALUES ('550e8400-e29b-41d4-a716-446655440000', 'Main Owner', 'owner');"
+
+# 3. Create branch
+supabase db query "INSERT INTO public.branch (code, name, address) \
+  VALUES ('main', 'Main Showroom', '123 Fashion Street, City, ZIP');"
+
+# 4. Assign user to branch
+supabase db query "INSERT INTO public.branch_user (branch_id, user_id, role) \
+  SELECT b.id, u.id, 'owner' \
+  FROM public.branch b \
+  JOIN public.user_profile u ON u.id = '550e8400-e29b-41d4-a716-446655440000' \
+  WHERE b.code = 'main';"
+```
+
+<Note>
+  This example matches the setup process from `/README.md:29-41`
+</Note>
+
+## Adding Additional Branches
+
+To add more branch locations:
+
+<Steps>
+  <Step title="Create the new branch">
+    ```sql
+    INSERT INTO public.branch (code, name, address, phone, email)
+    VALUES (
+      'downtown',
+      'Downtown Showroom',
+      '456 Central Ave, City, ZIP',
+      '+1-555-0200',
+      'downtown@pramukh.local'
+    );
+    ```
+  </Step>
+  
+  <Step title="Assign users to the new branch">
+    Assign existing users or create new ones:
+    
+    ```sql
+    -- Assign existing user as manager
+    INSERT INTO public.branch_user (branch_id, user_id, role)
+    SELECT b.id, u.id, 'manager'
+    FROM public.branch b
+    JOIN public.user_profile u ON u.full_name = 'John Manager'
+    WHERE b.code = 'downtown';
+    ```
+  </Step>
+  
+  <Step title="Configure branch-specific settings">
+    Set up branch-specific preferences (future feature):
+    - Tax rates
+    - Receipt formats
+    - Printer configurations
+  </Step>
+</Steps>
+
+## Multi-Branch User Assignments
+
+Users can work at multiple branches with different roles:
+
+```sql
+-- Assign user as owner at main branch
+INSERT INTO public.branch_user (branch_id, user_id, role)
+SELECT b.id, u.id, 'owner'
+FROM public.branch b
+JOIN public.user_profile u ON u.id = '<user-id>'
+WHERE b.code = 'main';
+
+-- Same user as manager at downtown branch
+INSERT INTO public.branch_user (branch_id, user_id, role)
+SELECT b.id, u.id, 'manager'
+FROM public.branch b
+JOIN public.user_profile u ON u.id = '<user-id>'
+WHERE b.code = 'downtown';
+```
+
+<Note>
+  Each user can only have one role per branch (unique constraint on `branch_id, user_id`).
+</Note>
+
+## Seed Data
+
+The migration file `/supabase/migrations/0002_seed_initial_data.sql` includes seed data that creates:
+
+- A default user profile with ID `fa7a02e7-b219-4f83-889d-049adf49267e`
+- A 'main' branch called 'Main Showroom'
+- An assignment connecting them with 'owner' role
+
+<Warning>
+  The seed migration uses a hardcoded UUID. You still need to create the corresponding auth user in Supabase with the same ID, or modify the seed file to use your actual user ID.
+</Warning>
+
+## Viewing Branch Assignments
+
+Query all branch assignments:
+
+```sql
+SELECT 
+  b.code AS branch_code,
+  b.name AS branch_name,
+  u.full_name AS user_name,
+  u.phone AS user_phone,
+  bu.role AS branch_role,
+  bu.created_at AS assigned_at
+FROM public.branch_user bu
+JOIN public.branch b ON bu.branch_id = b.id
+JOIN public.user_profile u ON bu.user_id = u.id
+ORDER BY b.code, bu.role, u.full_name;
+```
+
+## Removing User Assignments
+
+To remove a user from a branch:
+
+```sql
+DELETE FROM public.branch_user
+WHERE branch_id = '<branch-id>' 
+  AND user_id = '<user-id>';
+```
+
+Or by branch code:
+
+```sql
+DELETE FROM public.branch_user
+WHERE branch_id = (SELECT id FROM public.branch WHERE code = 'main')
+  AND user_id = '<user-id>';
+```
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Error: duplicate key value violates unique constraint">
+    This error occurs when trying to assign a user to a branch they're already assigned to.
+    
+    Check existing assignments:
+    ```sql
+    SELECT * FROM public.branch_user 
+    WHERE user_id = '<user-id>' AND branch_id = '<branch-id>';
+    ```
+    
+    To update the role instead:
+    ```sql
+    UPDATE public.branch_user
+    SET role = 'manager'
+    WHERE user_id = '<user-id>' AND branch_id = '<branch-id>';
+    ```
+  </Accordion>
+  
+  <Accordion title="Branch not showing in the application">
+    Ensure:
+    1. The branch was created successfully (`SELECT * FROM public.branch`)
+    2. At least one user is assigned to it
+    3. The application has been restarted to refresh data
+  </Accordion>
+  
+  <Accordion title="User cannot access branch">
+    Verify:
+    1. User has a record in `user_profile`
+    2. User is assigned to the branch in `branch_user`
+    3. The user has logged out and back in
+    
+    ```sql
+    SELECT * FROM public.branch_user bu
+    JOIN public.user_profile u ON bu.user_id = u.id
+    WHERE u.id = '<user-id>';
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Authentication" icon="lock" href="/setup/authentication">
+    Learn about user roles and permissions
+  </Card>
+  <Card title="Database Schema" icon="database" href="/setup/database-schema">
+    Understand the complete database structure
+  </Card>
+</CardGroup>

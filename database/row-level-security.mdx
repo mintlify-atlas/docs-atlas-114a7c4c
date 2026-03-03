@@ -1,0 +1,259 @@
+---
+title: Row Level Security
+description: Row Level Security (RLS) policies and access control
+---
+
+## Overview
+
+Row Level Security (RLS) is a PostgreSQL feature that allows you to control which rows users can access in database tables. It provides fine-grained access control at the database level.
+
+## Current Status
+
+<Warning>
+  Row Level Security policies are **not currently implemented** in Pramukh Men's Wear.
+</Warning>
+
+The database schema (as defined in `supabase/migrations/0001_initial_schema.sql`) does not include any RLS policies. All tables are created without RLS enabled, and there are no `CREATE POLICY` statements in the migration files.
+
+## Security Implications
+
+### Current Security Model
+
+Without RLS policies:
+
+- **Application-Level Security**: Access control must be enforced entirely in the application code
+- **Service Role Key**: The application must use appropriate API keys (anon key vs. service role key)
+- **API Layer**: All database access goes through Next.js API routes or Server Actions
+- **User Authentication**: Relies on Supabase Auth for user identity
+
+### Risks Without RLS
+
+1. **Direct Database Access**: If the anon key is compromised, users could potentially access data they shouldn't
+2. **Application Bugs**: Security bugs in application code could expose unauthorized data
+3. **Multi-Tenancy**: Branch-level data isolation is not enforced at the database level
+4. **Audit Trail**: Harder to audit who accessed what at the database level
+
+## Recommended Implementation
+
+To improve security, consider implementing RLS policies for the following scenarios:
+
+### 1. Branch Isolation
+
+Users should only access data for branches they're assigned to:
+
+```sql
+-- Enable RLS on branch-specific tables
+alter table public.sale enable row level security;
+alter table public.purchase enable row level security;
+alter table public.return_transaction enable row level security;
+
+-- Policy: Users can only see sales from their assigned branches
+create policy "Users can view sales from their branches"
+on public.sale
+for select
+using (
+  branch_id in (
+    select branch_id
+    from public.branch_user
+    where user_id = auth.uid()
+  )
+);
+
+-- Policy: Users can insert sales to their assigned branches
+create policy "Users can create sales for their branches"
+on public.sale
+for insert
+with check (
+  branch_id in (
+    select branch_id
+    from public.branch_user
+    where user_id = auth.uid()
+  )
+);
+```
+
+### 2. Role-Based Access
+
+Different operations based on user role:
+
+```sql
+-- Enable RLS on vendor table
+alter table public.vendor enable row level security;
+
+-- Policy: All authenticated users can view vendors
+create policy "Authenticated users can view vendors"
+on public.vendor
+for select
+using (auth.role() = 'authenticated');
+
+-- Policy: Only managers and owners can create vendors
+create policy "Managers and owners can create vendors"
+on public.vendor
+for insert
+with check (
+  exists (
+    select 1
+    from public.user_profile
+    where id = auth.uid()
+    and role in ('owner', 'manager')
+  )
+);
+```
+
+### 3. User Profile Access
+
+Users can only access their own profile:
+
+```sql
+alter table public.user_profile enable row level security;
+
+-- Policy: Users can view their own profile
+create policy "Users can view own profile"
+on public.user_profile
+for select
+using (id = auth.uid());
+
+-- Policy: Users can update their own profile (limited fields)
+create policy "Users can update own profile"
+on public.user_profile
+for update
+using (id = auth.uid())
+with check (id = auth.uid());
+```
+
+### 4. Read-Only Reference Data
+
+Categories and colors should be readable by all, writable by managers:
+
+```sql
+alter table public.category enable row level security;
+alter table public.color enable row level security;
+
+-- Policy: All authenticated users can view categories
+create policy "Authenticated users can view categories"
+on public.category
+for select
+using (auth.role() = 'authenticated');
+
+-- Policy: Only managers and owners can modify categories
+create policy "Managers can modify categories"
+on public.category
+for all
+using (
+  exists (
+    select 1
+    from public.user_profile
+    where id = auth.uid()
+    and role in ('owner', 'manager')
+  )
+);
+```
+
+## Implementation Steps
+
+To add RLS to the project:
+
+### 1. Create a New Migration
+
+```bash
+supabase migration new add_row_level_security
+```
+
+### 2. Enable RLS on Tables
+
+In the migration file, enable RLS on all sensitive tables:
+
+```sql
+-- Enable RLS on all tables
+alter table public.branch enable row level security;
+alter table public.user_profile enable row level security;
+alter table public.branch_user enable row level security;
+alter table public.category enable row level security;
+alter table public.color enable row level security;
+alter table public.item enable row level security;
+alter table public.item_variant enable row level security;
+alter table public.vendor enable row level security;
+alter table public.purchase enable row level security;
+alter table public.purchase_item enable row level security;
+alter table public.vendor_payment enable row level security;
+alter table public.customer enable row level security;
+alter table public.sale enable row level security;
+alter table public.sale_item enable row level security;
+alter table public.customer_payment enable row level security;
+alter table public.return_transaction enable row level security;
+alter table public.return_item enable row level security;
+alter table public.exchange_item enable row level security;
+```
+
+### 3. Create Policies
+
+Add policies for each table based on your access control requirements.
+
+### 4. Test Thoroughly
+
+- Test with different user roles (owner, manager, cashier)
+- Verify branch isolation works correctly
+- Ensure legitimate operations aren't blocked
+- Test with multiple branches
+
+### 5. Apply Migration
+
+```bash
+supabase db push
+```
+
+## Testing RLS Policies
+
+### Using SQL
+
+Test policies by setting the user context:
+
+```sql
+-- Set the authenticated user
+set request.jwt.claim.sub = '<user-id>';
+
+-- Try to select data
+select * from public.sale;
+
+-- Reset
+reset request.jwt.claim.sub;
+```
+
+### Using Application
+
+1. Log in with different user accounts
+2. Try to access data from different branches
+3. Verify users only see their authorized data
+4. Check that unauthorized operations are blocked
+
+## Common RLS Functions
+
+Useful PostgreSQL functions for RLS policies:
+
+- `auth.uid()` - Returns the ID of the authenticated user
+- `auth.role()` - Returns the role of the authenticated user
+- `auth.jwt()` - Returns the full JWT payload
+- `auth.email()` - Returns the email of the authenticated user
+
+## Best Practices
+
+1. **Enable RLS by Default**: Enable RLS on all tables, even if you start with permissive policies
+2. **Principle of Least Privilege**: Grant minimum necessary permissions
+3. **Test Policies**: Write tests for your RLS policies
+4. **Performance**: Index columns used in RLS policies
+5. **Documentation**: Document which roles can perform which operations
+6. **Audit**: Log policy violations and access patterns
+
+## Performance Considerations
+
+- RLS policies are evaluated on every query
+- Complex policies can slow down queries
+- Index columns used in policy conditions
+- Consider using security definer functions for complex checks
+- Monitor query performance after adding RLS
+
+## Related
+
+- [Database Migrations](/database/migrations)
+- [Schema Overview](/database/overview)
+- [Supabase RLS Documentation](https://supabase.com/docs/guides/auth/row-level-security)

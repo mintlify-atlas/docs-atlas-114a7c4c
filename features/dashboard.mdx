@@ -1,0 +1,130 @@
+---
+title: Dashboard
+description: Monitor sales, revenue, and key metrics across your retail locations
+icon: chart-line
+---
+
+The Dashboard provides a comprehensive overview of your business performance, displaying real-time metrics for sales, revenue, outstanding dues, and purchase activity.
+
+## Overview
+
+When you log in to Pramukh Men's Wear POS, the Dashboard is your central command center. It automatically displays data for your currently active branch and provides quick access to common workflows.
+
+<Note>
+You must be assigned to at least one branch to view dashboard data. If you see a "No branch assigned" message, contact your organization owner to grant you access.
+</Note>
+
+## Key Metrics
+
+The dashboard displays five primary summary cards that give you an at-a-glance view of your business:
+
+<CardGroup cols={2}>
+  <Card title="Total Sales" icon="receipt">
+    The total number of invoices issued across your active branch. This count includes all sales regardless of payment status.
+  </Card>
+  
+  <Card title="Revenue" icon="indian-rupee-sign">
+    Gross sales collected in Indian Rupees (₹). This represents the total value of all sales transactions.
+  </Card>
+  
+  <Card title="Outstanding Dues" icon="clock">
+    Pending amounts from credit customers. This metric appears with a warning indicator when dues exceed zero, helping you track receivables.
+  </Card>
+  
+  <Card title="Customers" icon="users">
+    Total number of unique customer profiles recorded in your system.
+  </Card>
+  
+  <Card title="Purchase Spend" icon="shopping-cart">
+    Total inventory procurement costs from all vendors for your active branch.
+  </Card>
+</CardGroup>
+
+## Dashboard Sections
+
+### Welcome Header
+
+The top section greets you by name (or email/phone if name is not set) and displays:
+
+- Your currently active branch name
+- Total number of branches you have access to
+- A description of how to use the dashboard
+
+### Branch Access Panel
+
+This panel shows all branches you're assigned to, with your currently active branch marked with an "Active" badge. Each branch displays:
+
+- Branch name
+- Branch code (in uppercase)
+
+<Tip>
+If you need to switch between branches, this panel helps you confirm which branch data you're currently viewing.
+</Tip>
+
+### Quick Actions
+
+The Quick Actions panel provides one-click access to your most common workflows:
+
+- **Start Billing** - Launch the POS interface to create a new sale
+- **Receive Stock** - Register a vendor purchase and update stock levels
+- **Add Customer** - Create a new customer profile for faster billing
+- **Add Item** - Create new catalog entries with variants and pricing
+
+Each quick action includes a brief description and an "OPEN" button to navigate directly to that feature.
+
+## Data Scope
+
+All metrics on the dashboard are filtered by your **active branch**. The system automatically:
+
+- Counts sales only for the selected branch
+- Calculates revenue and dues from branch-specific transactions
+- Shows purchase spend limited to the active branch
+- Displays customer count organization-wide (not branch-filtered)
+
+<Note>
+Customer count is organization-wide because customer profiles are shared across all branches.
+</Note>
+
+## Real-Time Updates
+
+Dashboard metrics are pulled directly from your Supabase database each time you load the page. This ensures you're always viewing the most current business data without manual refresh cycles.
+
+## Best Practices
+
+1. **Check Outstanding Dues Daily** - Review the Outstanding Dues metric each morning to prioritize customer follow-ups
+
+2. **Use Quick Actions** - Save time by launching common workflows directly from the dashboard instead of navigating through menus
+
+3. **Monitor Revenue Trends** - Compare daily revenue figures to identify peak sales periods and staffing needs
+
+4. **Confirm Active Branch** - Always verify your active branch before interpreting dashboard metrics to avoid confusion
+
+5. **Review Multiple Branches** - If you manage multiple locations, check the dashboard for each branch to get a complete picture
+
+## Common Scenarios
+
+### No Branch Assigned
+
+If you see a message that no branch is assigned:
+
+1. Contact your organization owner or administrator
+2. Ask them to assign you to one or more branches
+3. Once assigned, refresh the page to view your dashboard
+
+### Zero Metrics
+
+If all metrics show zero:
+
+- This is normal for newly created branches
+- Start by adding inventory items
+- Create customer profiles
+- Process your first sale through the POS
+
+### Outstanding Dues Warning
+
+When the Outstanding Dues card shows a warning (non-zero amount):
+
+1. Navigate to the Customers page
+2. Filter by customers with outstanding balances
+3. Follow up on pending payments
+4. Record payments as they're collected

@@ -1,0 +1,169 @@
+---
+title: Creating Your First Sale
+description: Step-by-step guide to processing your first POS transaction in Pramukh Men's Wear
+---
+
+This guide walks you through processing your first sale at the billing counter, from selecting items to collecting payment.
+
+## Before You Start
+
+Make sure you have:
+- Been assigned to a branch by your manager or owner
+- At least one item with variants in your inventory
+- Access to the POS (Point of Sale) interface
+
+If you see a "No branch assigned" message, contact your manager to assign you to a branch before proceeding.
+
+## Understanding the POS Dashboard
+
+When you open the POS interface, you'll see:
+
+- **Bills today**: Number of sales processed today and total amount billed
+- **Collected today**: Total payments received today and pending amounts
+- **Outstanding**: Total unpaid amounts across all sales
+- **Active cart**: Where you'll build the current sale
+- **Recent sales**: Latest 10 invoices issued at your branch
+
+## Processing a Sale
+
+<Steps>
+  <Step title="Start a New Sale">
+    Click the **"Start new sale"** button in the top-right corner of the POS dashboard.
+    
+    This opens the active cart where you'll add items and customer details.
+  </Step>
+
+  <Step title="Add Items to Cart">
+    Search and select items from your inventory:
+    
+    1. Search by item name, code, or SKU
+    2. Select the specific variant (size and color)
+    3. Enter the quantity
+    4. The system automatically calculates the line total based on the base price
+    
+    You can add multiple items to the same sale. Each item shows:
+    - SKU (Stock Keeping Unit)
+    - Size label
+    - Color
+    - Unit price
+    - Quantity
+    - Line total
+  </Step>
+
+  <Step title="Add Customer (Optional)">
+    You can process walk-in sales without customer details, but adding a customer helps with:
+    
+    - Tracking purchase history
+    - Managing outstanding payments
+    - Building customer relationships
+    
+    To add a customer:
+    1. Search by name or phone number
+    2. Select an existing customer or create a new one
+    3. For new customers, enter their full name and phone number
+    
+    Walk-in customers are labeled as "Walk-in" in the sales list.
+  </Step>
+
+  <Step title="Apply Discounts (Optional)">
+    If you have permission, you can apply discounts:
+    
+    - Line-item discounts on individual products
+    - Overall discount on the entire sale
+    
+    The cart automatically recalculates totals when you apply discounts.
+  </Step>
+
+  <Step title="Review the Sale Summary">
+    Before collecting payment, verify:
+    
+    - **Subtotal**: Sum of all items before discounts
+    - **Discount total**: Total discounts applied
+    - **Tax total**: Applicable taxes (if configured)
+    - **Total amount**: Final amount to collect
+  </Step>
+
+  <Step title="Collect Payment">
+    Click **"Collect payment"** to process the transaction:
+    
+    1. Enter the payment amount
+    2. Select payment method:
+       - Cash
+       - UPI
+       - Card
+       - Other
+    3. Add payment reference (optional, for UPI/card transactions)
+    4. Add notes if needed
+    
+    The system calculates:
+    - **Paid amount**: What the customer paid
+    - **Due amount**: Any remaining balance
+    
+    You can accept partial payments - the system tracks outstanding dues automatically.
+  </Step>
+
+  <Step title="Complete the Sale">
+    After collecting payment:
+    
+    1. The system generates a unique invoice number
+    2. The sale appears in the "Recent sales" list
+    3. The "Bills today" and "Collected today" stats update automatically
+    4. The cart clears for the next transaction
+    
+    Your invoice number format is typically the sale number in uppercase (e.g., "ABC12345").
+  </Step>
+</Steps>
+
+## Holding a Sale
+
+If you need to pause a transaction (customer needs to get more items, take a call, etc.):
+
+1. Click **"Hold sale"**
+2. The system saves the cart
+3. You can start a new sale for other customers
+4. Resume the held sale later from the held sales list
+
+## Understanding Sale Status
+
+In the recent sales list, each sale shows:
+
+- **Invoice number**: Unique identifier for the transaction
+- **Customer**: Name or "Walk-in" for anonymous customers
+- **Total**: Final amount of the sale
+- **Status**: Either "Paid" with amount or "Due" with pending amount
+- **Date**: When the sale was processed
+
+<Accordion title="What if I make a mistake?">
+  If you make an error:
+  
+  - **Before completing**: Simply remove items from the cart or cancel the sale
+  - **After completing**: Contact your manager to process a return or exchange transaction
+  
+  Managers and owners have access to return and exchange workflows.
+</Accordion>
+
+<Accordion title="Can I edit sales after they're completed?">
+  No, completed sales cannot be edited to maintain financial integrity. If corrections are needed:
+  
+  - Process a return for the original sale
+  - Create a new sale with correct details
+  
+  All transactions maintain a complete audit trail.
+</Accordion>
+
+<Accordion title="How do I handle split payments?">
+  Customers can pay using multiple methods:
+  
+  1. Accept the first payment (e.g., ₹5,000 cash)
+  2. The system calculates remaining due amount
+  3. Record additional payments against the same sale
+  4. Each payment is tracked separately with its method and reference
+  
+  This is useful for large purchases where customers pay partly by card and partly by cash.
+</Accordion>
+
+## Next Steps
+
+- Learn about [managing inventory](/guides/managing-inventory) to add more products
+- Understand [user roles and permissions](/guides/user-roles-permissions) to see what features you can access
+- Explore how to [record purchases](/guides/recording-purchases) from vendors

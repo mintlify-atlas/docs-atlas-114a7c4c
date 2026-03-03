@@ -1,0 +1,312 @@
+---
+title: Recording Purchases
+description: Guide to recording vendor purchases and managing purchase orders in Pramukh Men's Wear
+---
+
+This guide walks you through recording inventory purchases from vendors, tracking payments, and managing your supplier relationships.
+
+## Understanding Purchases
+
+The purchase system helps you track:
+
+- **Vendors**: Suppliers you buy inventory from
+- **Purchase orders**: Records of inventory received from vendors
+- **Purchase items**: Individual items and quantities in each order
+- **Vendor payments**: Payments made to suppliers over time
+
+## Prerequisites
+
+Before recording purchases:
+
+- You must be assigned to a branch (managers and owners)
+- Items and variants should exist in your inventory
+- Vendors should be created (or create them during the purchase flow)
+
+## Managing Vendors
+
+Vendors are the suppliers you purchase inventory from.
+
+<Steps>
+  <Step title="Create a Vendor">
+    Before recording your first purchase, add the vendor:
+    
+    Navigate to the vendors section and click **"Add vendor"**.
+    
+    Required information:
+    - **Name**: Vendor's business name (must be unique)
+    - **Contact name**: Primary contact person
+    - **Phone**: Contact phone number
+    - **Email**: Vendor's email address
+    - **GST number**: Tax identification (for Indian businesses)
+    - **Address**: Vendor's business address
+    
+    Only the name is required, but complete information helps with tax compliance and communication.
+  </Step>
+
+  <Step title="Search Vendors">
+    Use the search functionality to find vendors by:
+    
+    - Business name
+    - Contact phone
+    - Email address
+    
+    This is helpful when you have many suppliers.
+  </Step>
+
+  <Step title="Edit Vendor Details">
+    Update vendor information as needed:
+    
+    - Change contact details
+    - Update GST number
+    - Modify address
+    
+    Changes don't affect historical purchase records.
+  </Step>
+</Steps>
+
+## Recording a Purchase Order
+
+When you receive inventory from a vendor, create a purchase order to track it.
+
+<Steps>
+  <Step title="Navigate to Purchases">
+    From the main navigation, go to **Purchases**.
+    
+    If you're not assigned to a branch, you'll see a message to get branch access first.
+    
+    The dashboard displays:
+    - **Orders**: Total purchase orders for your branch
+    - **Page value**: Total value of visible purchase orders
+    - **Paid**: Amount paid to vendors
+    - **Due**: Outstanding amounts owed to vendors
+  </Step>
+
+  <Step title="Start a New Purchase">
+    Click **"Add purchase"** in the top-right corner.
+    
+    You'll be prompted to select:
+    - **Vendor**: Choose from existing vendors or create a new one
+    - **Invoice number**: Vendor's invoice/bill number (optional but recommended)
+    - **Purchase date**: When you received the items (defaults to today)
+  </Step>
+
+  <Step title="Add Purchase Items">
+    For each item in the shipment:
+    
+    1. Select the **item variant** from your inventory
+    2. Enter the **quantity** received
+    3. Enter the **unit cost** (what the vendor charged per unit)
+    4. Apply **discount** if the vendor gave a line-item discount
+    
+    The system automatically calculates:
+    - Total cost per line item
+    - Subtotal for all items
+  </Step>
+
+  <Step title="Apply Discounts and Taxes">
+    At the purchase level, you can add:
+    
+    - **Overall discount**: Discount applied to the entire order
+    - **Tax total**: GST or other applicable taxes
+    
+    The system calculates:
+    ```
+    Subtotal = Sum of all line items
+    Discount total = Line discounts + overall discount
+    Tax total = Applicable taxes
+    Total amount = Subtotal - Discount total + Tax total
+    ```
+  </Step>
+
+  <Step title="Add Notes">
+    Use the notes field for:
+    
+    - Quality observations
+    - Shipment condition
+    - Special terms from the vendor
+    - Reference numbers
+    
+    Notes help track issues or special conditions for future reference.
+  </Step>
+
+  <Step title="Save the Purchase">
+    Click **"Record purchase"** to save the order.
+    
+    The purchase appears in the recent purchases table showing:
+    - Invoice number (or auto-generated ID)
+    - Vendor name
+    - Total quantity of items
+    - Total amount
+    - Paid amount (initially ₹0)
+    - Due amount (equals total amount initially)
+    - Purchase date
+  </Step>
+</Steps>
+
+## Recording Vendor Payments
+
+Track payments to vendors to manage outstanding balances and cash flow.
+
+<Steps>
+  <Step title="Open Payment Dialog">
+    From the purchases page, find the purchase order and click **"Record payment"**.
+  </Step>
+
+  <Step title="Enter Payment Details">
+    Fill in the payment information:
+    
+    - **Amount**: How much you're paying (can be partial or full)
+    - **Payment method**: Select from:
+      - Cash
+      - UPI
+      - Card
+      - Other
+    - **Reference**: Transaction ID, check number, or UPI reference
+    - **Notes**: Additional context about the payment
+    - **Paid at**: Date and time of payment (defaults to now)
+  </Step>
+
+  <Step title="Review Outstanding Balance">
+    After recording payment, the system updates:
+    
+    - **Paid amount**: Total paid so far
+    - **Due amount**: Remaining balance
+    
+    The purchase status shows:
+    - "Due ₹X" if any balance remains
+    - "Paid ₹X" if fully paid
+  </Step>
+
+  <Step title="Record Multiple Payments">
+    For large purchases, you can make multiple payments:
+    
+    1. Record the first payment (e.g., advance payment)
+    2. Record subsequent payments as you make them
+    3. Each payment is tracked with its own method, date, and reference
+    
+    This gives you complete payment history per purchase order.
+  </Step>
+</Steps>
+
+## Viewing Purchase Analytics
+
+The purchases dashboard provides insights into your vendor spending:
+
+### Recent Purchases Table
+
+Shows the latest purchase orders with:
+- Invoice number or generated ID
+- Vendor name
+- Total quantity of units received
+- Total amount of the purchase
+- Amount paid to date
+- Outstanding due amount
+- Purchase date
+
+### Latest Payments Section
+
+Displays recent vendor payments:
+- Purchase reference
+- Payment amount
+- Payment date
+
+Use this to track cash outflows and verify payment posting.
+
+### Search and Filter
+
+Search purchases by:
+- Invoice number
+- Vendor name
+- Notes content
+
+Results are paginated with 10 purchases per page.
+
+## Best Practices
+
+### Invoice Numbering
+
+Always enter the vendor's invoice number:
+- Makes it easier to reconcile with vendor statements
+- Helps during tax filing
+- Simplifies dispute resolution
+- Prevents duplicate entry of the same shipment
+
+### Payment Tracking
+
+```
+Do:
+✓ Record payments immediately after making them
+✓ Include UPI/check reference numbers
+✓ Note payment terms in purchase notes
+✓ Review outstanding dues regularly
+
+Don't:
+✗ Wait to record payments in batches
+✗ Skip payment references
+✗ Forget to verify paid amounts
+```
+
+### Quality Control
+
+Use the notes field during purchase to document:
+- Item condition on arrival
+- Any damaged or defective pieces
+- Missing items vs. invoice
+- Agreement on returns or credits
+
+This creates a record if you need to claim credit or return items later.
+
+<Accordion title="Can I edit a purchase after saving it?">
+  Yes, managers and owners can edit purchase orders to correct mistakes:
+  
+  - Update quantities or costs
+  - Change invoice number
+  - Modify taxes or discounts
+  - Add or remove items
+  
+  However, best practice is to enter accurately the first time and use notes to document any post-delivery adjustments.
+</Accordion>
+
+<Accordion title="What if I pay the vendor before creating the purchase order?">
+  Two approaches:
+  
+  1. **Recommended**: Create the purchase first, then record the payment
+  2. **Alternative**: Create the purchase with the payment date backdated
+  
+  The system tracks when payments occurred, not when they were entered, so backdating maintains accurate financial records.
+</Accordion>
+
+<Accordion title="How do I handle vendor returns or credits?">
+  For items you return to vendors:
+  
+  1. Add notes to the original purchase documenting the return
+  2. If the vendor issues a credit memo, record a negative payment or create a new purchase with negative quantity
+  3. Update the notes with credit terms and resolution
+  
+  Work with your accountant to determine the best approach for your business and tax compliance needs.
+</Accordion>
+
+<Accordion title="Can I see total spending per vendor?">
+  While the current view shows per-purchase details, you can:
+  
+  - Search for a specific vendor to see all their purchases
+  - Review the payment history for each purchase
+  - Export data for detailed vendor spending analysis
+  
+  Vendor analytics features may be added in future updates.
+</Accordion>
+
+<Accordion title="Do purchases automatically update stock levels?">
+  This depends on your system configuration:
+  
+  - If stock tracking is enabled, purchases increase stock levels automatically
+  - If stock tracking is not enabled, purchases are recorded for financial purposes but don't affect inventory counts
+  
+  Check with your system administrator or owner to understand your setup.
+</Accordion>
+
+## Next Steps
+
+- Learn about [managing inventory](/guides/managing-inventory) to organize purchased items
+- Explore [creating sales](/guides/creating-first-sale) to sell your inventory
+- Understand [user roles](/guides/user-roles-permissions) to see who can manage purchases

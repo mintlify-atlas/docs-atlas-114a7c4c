@@ -1,0 +1,322 @@
+---
+title: 'Inventory'
+description: 'Product catalog, categories, variants, and inventory management tables'
+icon: 'boxes-stacked'
+---
+
+## Overview
+
+The inventory module manages the product catalog with support for variants (size/color combinations), categories, and pricing. It's designed for apparel retail with flexible size systems.
+
+## Tables
+
+### category
+
+Organizes items into product categories with size type specifications.
+
+```sql
+create table public.category (
+  id uuid primary key default gen_random_uuid(),
+  name text not null unique,
+  size_type public.size_type not null default 'alpha',
+  description text,
+  created_at timestamptz not null default timezone('utc', now()),
+  updated_at timestamptz not null default timezone('utc', now())
+);
+```
+
+#### Columns
+
+<ResponseField name="id" type="uuid" required>
+  Primary key, auto-generated UUID
+</ResponseField>
+
+<ResponseField name="name" type="text" required>
+  Unique category name (e.g., 'Shirts', 'Trousers', 'Accessories')
+</ResponseField>
+
+<ResponseField name="size_type" type="size_type" required default="alpha">
+  How sizes are labeled for items in this category.
+  
+  **Enum values**:
+  - `alpha` - Alphabetic sizes (S, M, L, XL, XXL)
+  - `numeric` - Numeric sizes (28, 30, 32, 34)
+  - `free_size` - One-size-fits-all
+</ResponseField>
+
+<ResponseField name="description" type="text">
+  Optional category description
+</ResponseField>
+
+<ResponseField name="created_at" type="timestamptz" required>
+  Record creation timestamp (UTC)
+</ResponseField>
+
+<ResponseField name="updated_at" type="timestamptz" required>
+  Last update timestamp (UTC), automatically updated by trigger
+</ResponseField>
+
+#### Constraints & Indexes
+
+- **Unique constraint**: `name` must be unique
+- **Trigger**: `set_timestamp_category` - automatically updates `updated_at`
+
+---
+
+### color
+
+Defines available product colors with optional hex values for display.
+
+```sql
+create table public.color (
+  id uuid primary key default gen_random_uuid(),
+  name text not null unique,
+  hex_value char(7),
+  created_at timestamptz not null default timezone('utc', now()),
+  updated_at timestamptz not null default timezone('utc', now())
+);
+```
+
+#### Columns
+
+<ResponseField name="id" type="uuid" required>
+  Primary key, auto-generated UUID
+</ResponseField>
+
+<ResponseField name="name" type="text" required>
+  Unique color name (e.g., 'Navy Blue', 'Charcoal Gray', 'White')
+</ResponseField>
+
+<ResponseField name="hex_value" type="char(7)">
+  Hex color code for UI display (e.g., '#0000FF')
+</ResponseField>
+
+<ResponseField name="created_at" type="timestamptz" required>
+  Record creation timestamp (UTC)
+</ResponseField>
+
+<ResponseField name="updated_at" type="timestamptz" required>
+  Last update timestamp (UTC), automatically updated by trigger
+</ResponseField>
+
+#### Constraints & Indexes
+
+- **Unique constraint**: `name` must be unique
+- **Trigger**: `set_timestamp_color` - automatically updates `updated_at`
+
+---
+
+### item
+
+Represents a product in the catalog. Each item can have multiple variants (size/color combinations).
+
+```sql
+create table public.item (
+  id uuid primary key default gen_random_uuid(),
+  category_id uuid references public.category(id) on delete set null,
+  code text not null unique,
+  name text not null,
+  description text,
+  created_at timestamptz not null default timezone('utc', now()),
+  updated_at timestamptz not null default timezone('utc', now())
+);
+```
+
+#### Columns
+
+<ResponseField name="id" type="uuid" required>
+  Primary key, auto-generated UUID
+</ResponseField>
+
+<ResponseField name="category_id" type="uuid">
+  Reference to category. Set to null if category is deleted.
+</ResponseField>
+
+<ResponseField name="code" type="text" required>
+  Unique item code/identifier (e.g., 'SH-001', 'TR-102')
+</ResponseField>
+
+<ResponseField name="name" type="text" required>
+  Display name of the item
+</ResponseField>
+
+<ResponseField name="description" type="text">
+  Detailed item description
+</ResponseField>
+
+<ResponseField name="created_at" type="timestamptz" required>
+  Record creation timestamp (UTC)
+</ResponseField>
+
+<ResponseField name="updated_at" type="timestamptz" required>
+  Last update timestamp (UTC), automatically updated by trigger
+</ResponseField>
+
+#### Constraints & Indexes
+
+- **Foreign key**: `category_id` references `category(id)` with `ON DELETE SET NULL`
+- **Unique constraint**: `code` must be unique
+- **Trigger**: `set_timestamp_item` - automatically updates `updated_at`
+
+#### Relationships
+
+- **category** (N:1) - Item belongs to a category
+- **item_variant** (1:N) - Item has multiple variants
+
+---
+
+### item_variant
+
+Represents a specific size/color combination of an item with its own SKU, pricing, and stock.
+
+```sql
+create table public.item_variant (
+  id uuid primary key default gen_random_uuid(),
+  item_id uuid not null references public.item(id) on delete cascade,
+  sku text not null unique,
+  size_label text not null,
+  color_id uuid references public.color(id) on delete set null,
+  qr_code_url text,
+  base_cost numeric(12, 2),
+  base_price numeric(12, 2),
+  is_active boolean not null default true,
+  created_at timestamptz not null default timezone('utc', now()),
+  updated_at timestamptz not null default timezone('utc', now())
+);
+create index item_variant_item_id_idx on public.item_variant (item_id);
+```
+
+#### Columns
+
+<ResponseField name="id" type="uuid" required>
+  Primary key, auto-generated UUID
+</ResponseField>
+
+<ResponseField name="item_id" type="uuid" required>
+  Reference to parent item. Cascade deletes when item is deleted.
+</ResponseField>
+
+<ResponseField name="sku" type="text" required>
+  Unique Stock Keeping Unit identifier (e.g., 'SH-001-M-BLUE')
+</ResponseField>
+
+<ResponseField name="size_label" type="text" required>
+  Size label (e.g., 'M', 'L', '32', '34'). Format depends on category's size_type.
+</ResponseField>
+
+<ResponseField name="color_id" type="uuid">
+  Reference to color. Set to null if color is deleted.
+</ResponseField>
+
+<ResponseField name="qr_code_url" type="text">
+  URL to QR code image for quick scanning
+</ResponseField>
+
+<ResponseField name="base_cost" type="numeric(12,2)">
+  Default purchase cost per unit
+</ResponseField>
+
+<ResponseField name="base_price" type="numeric(12,2)">
+  Default selling price per unit
+</ResponseField>
+
+<ResponseField name="is_active" type="boolean" required default="true">
+  Whether this variant is active for sale
+</ResponseField>
+
+<ResponseField name="created_at" type="timestamptz" required>
+  Record creation timestamp (UTC)
+</ResponseField>
+
+<ResponseField name="updated_at" type="timestamptz" required>
+  Last update timestamp (UTC), automatically updated by trigger
+</ResponseField>
+
+#### Constraints & Indexes
+
+- **Foreign key**: `item_id` references `item(id)` with `ON DELETE CASCADE`
+- **Foreign key**: `color_id` references `color(id)` with `ON DELETE SET NULL`
+- **Unique constraint**: `sku` must be unique
+- **Index**: `item_variant_item_id_idx` on `item_id` for efficient lookups
+- **Trigger**: `set_timestamp_item_variant` - automatically updates `updated_at`
+
+#### Relationships
+
+- **item** (N:1) - Variant belongs to an item
+- **color** (N:1) - Variant has a color
+- **purchase_item** (1:N) - Variant appears in purchase orders
+- **sale_item** (1:N) - Variant appears in sales
+- **return_item** (1:N) - Variant can be returned
+- **exchange_item** (1:N) - Variant can be exchanged
+
+#### Usage Example
+
+```sql
+-- Create an item with variants
+insert into public.item (code, name, category_id)
+values ('SH-001', 'Classic Formal Shirt', '...category-uuid...');
+
+-- Add size/color variants
+insert into public.item_variant (item_id, sku, size_label, color_id, base_cost, base_price)
+values 
+  ('...item-uuid...', 'SH-001-M-WHITE', 'M', '...white-color-uuid...', 500.00, 899.00),
+  ('...item-uuid...', 'SH-001-L-WHITE', 'L', '...white-color-uuid...', 500.00, 899.00),
+  ('...item-uuid...', 'SH-001-M-BLUE', 'M', '...blue-color-uuid...', 500.00, 899.00);
+```
+
+## Product Hierarchy
+
+<Steps>
+  <Step title="Category">
+    Top-level grouping (e.g., Shirts, Trousers, Accessories)
+    
+    Defines size type for all items in the category
+  </Step>
+  <Step title="Item">
+    A specific product (e.g., "Classic Formal Shirt")
+    
+    Has a unique code and belongs to a category
+  </Step>
+  <Step title="Item Variant">
+    A sellable unit with specific size and color
+    
+    Has unique SKU, pricing, and stock tracking
+  </Step>
+</Steps>
+
+## Size Type Handling
+
+### Alpha Sizes
+```sql
+insert into public.category (name, size_type) values ('T-Shirts', 'alpha');
+-- Variants: S, M, L, XL, XXL, XXXL
+```
+
+### Numeric Sizes
+```sql
+insert into public.category (name, size_type) values ('Trousers', 'numeric');
+-- Variants: 28, 30, 32, 34, 36, 38, 40
+```
+
+### Free Size
+```sql
+insert into public.category (name, size_type) values ('Belts', 'free_size');
+-- Variants: One Size, Adjustable
+```
+
+## Pricing Strategy
+
+Each variant stores base pricing:
+
+- **base_cost**: Default purchase cost (for margin calculation)
+- **base_price**: Default selling price
+
+Actual transaction prices are stored in:
+- `purchase_item.unit_cost` - Actual purchase price
+- `sale_item.unit_price` - Actual selling price
+- `sale_item.cost_price` - Cost at time of sale (for profit calculation)
+
+This allows:
+- Price variations per transaction
+- Discounts without affecting base prices
+- Historical profit analysis

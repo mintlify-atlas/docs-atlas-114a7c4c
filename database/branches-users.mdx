@@ -1,0 +1,253 @@
+---
+title: 'Branches & Users'
+description: 'Branch management and user access control tables'
+icon: 'users'
+---
+
+## Overview
+
+This module handles multi-branch operations and user management. It integrates with Supabase Authentication (`auth.users`) for secure user authentication while maintaining application-specific profile data.
+
+## Tables
+
+### branch
+
+Stores information about physical store locations.
+
+```sql
+create table public.branch (
+  id uuid primary key default gen_random_uuid(),
+  code text not null unique,
+  name text not null,
+  address text,
+  phone text,
+  email text,
+  created_at timestamptz not null default timezone('utc', now()),
+  updated_at timestamptz not null default timezone('utc', now())
+);
+```
+
+#### Columns
+
+<ResponseField name="id" type="uuid" required>
+  Primary key, auto-generated UUID
+</ResponseField>
+
+<ResponseField name="code" type="text" required>
+  Unique branch identifier code (e.g., 'main', 'downtown', 'mall')
+</ResponseField>
+
+<ResponseField name="name" type="text" required>
+  Display name of the branch
+</ResponseField>
+
+<ResponseField name="address" type="text">
+  Physical address of the branch
+</ResponseField>
+
+<ResponseField name="phone" type="text">
+  Contact phone number
+</ResponseField>
+
+<ResponseField name="email" type="text">
+  Contact email address
+</ResponseField>
+
+<ResponseField name="created_at" type="timestamptz" required>
+  Record creation timestamp (UTC)
+</ResponseField>
+
+<ResponseField name="updated_at" type="timestamptz" required>
+  Last update timestamp (UTC), automatically updated by trigger
+</ResponseField>
+
+#### Constraints & Indexes
+
+- **Unique constraint**: `code` must be unique
+- **Trigger**: `set_timestamp` - automatically updates `updated_at` on modification
+
+#### Usage Example
+
+```sql
+insert into public.branch (code, name, address, phone)
+values ('main', 'Main Showroom', '123 Fashion Street', '+91-9876543210');
+```
+
+---
+
+### user_profile
+
+Extends Supabase authentication with application-specific user data.
+
+```sql
+create table public.user_profile (
+  id uuid primary key references auth.users(id) on delete cascade,
+  full_name text,
+  phone text,
+  role public.branch_role not null default 'cashier',
+  created_at timestamptz not null default timezone('utc', now()),
+  updated_at timestamptz not null default timezone('utc', now())
+);
+create unique index user_profile_phone_key on public.user_profile (phone) where phone is not null;
+```
+
+#### Columns
+
+<ResponseField name="id" type="uuid" required>
+  Primary key, references `auth.users(id)`. Cascades on user deletion.
+</ResponseField>
+
+<ResponseField name="full_name" type="text">
+  User's full display name
+</ResponseField>
+
+<ResponseField name="phone" type="text">
+  Contact phone number (unique when provided)
+</ResponseField>
+
+<ResponseField name="role" type="branch_role" required default="cashier">
+  Default user role. Can be overridden per-branch in `branch_user`.
+  
+  **Enum values**: `owner`, `manager`, `cashier`
+</ResponseField>
+
+<ResponseField name="created_at" type="timestamptz" required>
+  Record creation timestamp (UTC)
+</ResponseField>
+
+<ResponseField name="updated_at" type="timestamptz" required>
+  Last update timestamp (UTC), automatically updated by trigger
+</ResponseField>
+
+#### Constraints & Indexes
+
+- **Foreign key**: `id` references `auth.users(id)` with `ON DELETE CASCADE`
+- **Conditional unique index**: `phone` is unique when not null
+- **Trigger**: `set_timestamp_user_profile` - automatically updates `updated_at`
+
+#### Relationships
+
+- **auth.users** (1:1) - Links to Supabase authentication
+- **branch_user** (1:N) - User can be assigned to multiple branches
+- **sale** (1:N) - User can process sales as cashier
+- **purchase** (1:N) - User can create purchase orders
+- **return_transaction** (1:N) - User can process returns
+
+---
+
+### branch_user
+
+Assigns users to branches with specific roles. Allows users to have different roles in different branches.
+
+```sql
+create table public.branch_user (
+  id uuid primary key default gen_random_uuid(),
+  branch_id uuid not null references public.branch(id) on delete cascade,
+  user_id uuid not null references public.user_profile(id) on delete cascade,
+  role public.branch_role not null,
+  created_at timestamptz not null default timezone('utc', now())
+);
+create unique index branch_user_branch_id_user_id_key on public.branch_user (branch_id, user_id);
+```
+
+#### Columns
+
+<ResponseField name="id" type="uuid" required>
+  Primary key, auto-generated UUID
+</ResponseField>
+
+<ResponseField name="branch_id" type="uuid" required>
+  Reference to the branch
+</ResponseField>
+
+<ResponseField name="user_id" type="uuid" required>
+  Reference to the user profile
+</ResponseField>
+
+<ResponseField name="role" type="branch_role" required>
+  User's role in this specific branch.
+  
+  **Enum values**: `owner`, `manager`, `cashier`
+</ResponseField>
+
+<ResponseField name="created_at" type="timestamptz" required>
+  Assignment creation timestamp (UTC)
+</ResponseField>
+
+#### Constraints & Indexes
+
+- **Foreign key**: `branch_id` references `branch(id)` with `ON DELETE CASCADE`
+- **Foreign key**: `user_id` references `user_profile(id)` with `ON DELETE CASCADE`
+- **Composite unique index**: `(branch_id, user_id)` - prevents duplicate assignments
+
+#### Relationships
+
+- **branch** (N:1) - Assignment belongs to a branch
+- **user_profile** (N:1) - Assignment belongs to a user
+
+#### Usage Example
+
+```sql
+-- Assign user as manager in a branch
+insert into public.branch_user (branch_id, user_id, role)
+values (
+  '...branch-uuid...',
+  '...user-uuid...',
+  'manager'
+);
+```
+
+## Role-Based Access
+
+### Role Hierarchy
+
+<Steps>
+  <Step title="Owner">
+    Full system access, can manage all branches, users, and settings
+  </Step>
+  <Step title="Manager">
+    Branch-level management, can view reports and manage inventory
+  </Step>
+  <Step title="Cashier">
+    Point-of-sale operations, process sales and returns
+  </Step>
+</Steps>
+
+### Multi-Branch Support
+
+The schema supports:
+- Multiple branches per organization
+- Users assigned to multiple branches
+- Different roles per branch for the same user
+
+```sql
+-- User can be manager in one branch and cashier in another
+insert into public.branch_user (branch_id, user_id, role)
+values 
+  ('branch-1-uuid', 'user-uuid', 'manager'),
+  ('branch-2-uuid', 'user-uuid', 'cashier');
+```
+
+## Initial Seed Data
+
+The migration creates a default owner and main branch:
+
+```sql
+-- From 0002_seed_initial_data.sql
+insert into public.user_profile (id, full_name, role, phone)
+values (
+  'fa7a02e7-b219-4f83-889d-049adf49267e',
+  'Main Owner',
+  'owner',
+  null
+);
+
+insert into public.branch (code, name, address)
+values ('main', 'Main Showroom', null);
+
+insert into public.branch_user (branch_id, user_id, role)
+select b.id, u.id, 'owner'
+from public.branch b
+join public.user_profile u on u.id = 'fa7a02e7-b219-4f83-889d-049adf49267e'
+where b.code = 'main';
+```

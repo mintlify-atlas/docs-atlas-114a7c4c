@@ -1,0 +1,468 @@
+---
+title: UI Components
+description: shadcn/ui component library integration and custom components
+---
+
+## Overview
+
+Pramukh Men's Wear uses [shadcn/ui](https://ui.shadcn.com/) for its component library, built on top of Radix UI primitives and styled with Tailwind CSS. The project follows the "new-york" style preset with custom theming.
+
+## Configuration
+
+The shadcn/ui configuration is defined in `components.json`:
+
+```json
+{
+  "$schema": "https://ui.shadcn.com/schema.json",
+  "style": "new-york",
+  "rsc": true,
+  "tsx": true,
+  "tailwind": {
+    "config": "",
+    "css": "app/globals.css",
+    "baseColor": "neutral",
+    "cssVariables": true,
+    "prefix": ""
+  },
+  "iconLibrary": "lucide",
+  "aliases": {
+    "components": "@/components",
+    "utils": "@/lib/utils",
+    "ui": "@/components/ui",
+    "lib": "@/lib",
+    "hooks": "@/hooks"
+  }
+}
+```
+
+### Key Configuration Details
+
+- **Style**: `new-york` - Modern component design with cleaner aesthetics
+- **RSC**: React Server Components enabled
+- **Base Color**: `neutral` - Provides the color palette foundation
+- **CSS Variables**: Enabled for dynamic theming
+- **Icon Library**: Lucide React for consistent iconography
+
+## Core UI Components
+
+All UI components are located in `components/ui/` and follow Radix UI patterns.
+
+### Button Component
+
+The button component uses `class-variance-authority` for variant management:
+
+```typescript
+import { Button } from "@/components/ui/button";
+
+// Usage examples
+<Button>Default</Button>
+<Button variant="destructive">Delete</Button>
+<Button variant="outline">Cancel</Button>
+<Button variant="ghost">Ghost</Button>
+<Button size="sm">Small</Button>
+<Button size="lg">Large</Button>
+<Button size="icon">⚙️</Button>
+```
+
+**Available Variants:**
+- `default` - Primary action button
+- `destructive` - Dangerous actions
+- `outline` - Secondary actions
+- `secondary` - Alternative actions
+- `ghost` - Minimal styling
+- `link` - Text link styling
+
+**Available Sizes:**
+- `default` - h-9 with standard padding
+- `sm` - h-8 smaller button
+- `lg` - h-10 larger button
+- `icon` - h-9 w-9 square button
+
+### Input Component
+
+Styled input field with focus states and validation styling:
+
+```typescript
+import { Input } from "@/components/ui/input";
+
+<Input type="text" placeholder="Enter name" />
+<Input type="email" placeholder="email@example.com" />
+<Input type="number" step="0.01" placeholder="0.00" />
+<Input type="date" />
+```
+
+The input automatically styles validation states via `aria-invalid` attribute.
+
+### Dialog Component
+
+Modal dialog built on Radix UI Dialog:
+
+```typescript
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+
+<Dialog open={open} onOpenChange={setOpen}>
+  <DialogTrigger asChild>
+    <Button>Open Dialog</Button>
+  </DialogTrigger>
+  <DialogContent className="sm:max-w-lg">
+    <DialogHeader>
+      <DialogTitle>Dialog Title</DialogTitle>
+      <DialogDescription>
+        Dialog description text
+      </DialogDescription>
+    </DialogHeader>
+    {/* Content */}
+    <DialogFooter>
+      <Button type="submit">Save</Button>
+    </DialogFooter>
+  </DialogContent>
+</Dialog>
+```
+
+### Card Component
+
+Container component for grouped content:
+
+```typescript
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+
+<Card>
+  <CardHeader>
+    <CardTitle>Card Title</CardTitle>
+    <CardDescription>Supporting description</CardDescription>
+  </CardHeader>
+  <CardContent>
+    {/* Main content */}
+  </CardContent>
+  <CardFooter>
+    {/* Actions */}
+  </CardFooter>
+</Card>
+```
+
+### Select Component
+
+Dropdown select built on Radix UI Select:
+
+```typescript
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+<Select value={value} onValueChange={onChange}>
+  <SelectTrigger>
+    <SelectValue placeholder="Select option" />
+  </SelectTrigger>
+  <SelectContent>
+    <SelectItem value="option1">Option 1</SelectItem>
+    <SelectItem value="option2">Option 2</SelectItem>
+  </SelectContent>
+</Select>
+```
+
+## Custom Application Components
+
+Custom components in `components/app/` extend the base UI components with application-specific logic.
+
+### FormSubmitButton
+
+Button that automatically shows loading state during form submission:
+
+```typescript
+import { FormSubmitButton } from "@/components/app/form-submit-button";
+
+<form action={serverAction}>
+  {/* Form fields */}
+  <FormSubmitButton pendingLabel="Saving...">
+    Save Changes
+  </FormSubmitButton>
+</form>
+```
+
+**Implementation:**
+
+```typescript
+"use client";
+
+import { useFormStatus } from "react-dom";
+import { Button, type ButtonProps } from "@/components/ui/button";
+
+type FormSubmitButtonProps = {
+  pendingLabel?: string;
+} & ButtonProps;
+
+export function FormSubmitButton({
+  children,
+  pendingLabel = "Saving...",
+  disabled,
+  ...props
+}: FormSubmitButtonProps) {
+  const { pending } = useFormStatus();
+
+  return (
+    <Button type="submit" disabled={disabled ?? pending} {...props}>
+      {pending ? pendingLabel : children}
+    </Button>
+  );
+}
+```
+
+### ModeToggle
+
+Theme switcher using next-themes:
+
+```typescript
+import { ModeToggle } from "@/components/app/mode-toggle";
+
+<ModeToggle />
+```
+
+**Implementation:**
+
+```typescript
+"use client";
+
+import { MoonIcon, SunIcon } from "lucide-react";
+import { useTheme } from "next-themes";
+import { Toggle } from "@/components/ui/toggle";
+
+export function ModeToggle() {
+  const { theme, setTheme } = useTheme();
+  const isDark = theme === "dark";
+
+  return (
+    <Toggle
+      aria-label="Toggle theme"
+      pressed={isDark}
+      onPressedChange={(pressed) => setTheme(pressed ? "dark" : "light")}
+    >
+      <SunIcon className="size-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+      <MoonIcon className="absolute size-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+    </Toggle>
+  );
+}
+```
+
+### SidebarNav
+
+Navigation component with active state styling:
+
+```typescript
+import { SidebarNav } from "@/components/app/sidebar-nav";
+
+const navItems = [
+  { href: "/dashboard", label: "Dashboard" },
+  { href: "/vendors", label: "Vendors" },
+  { href: "/purchases", label: "Purchases" },
+];
+
+<SidebarNav items={navItems} />
+```
+
+**Implementation:**
+
+```typescript
+"use client";
+
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+
+export type NavItem = {
+  href: string;
+  label: string;
+};
+
+export function SidebarNav({ items }: { items: NavItem[] }) {
+  const pathname = usePathname();
+
+  return (
+    <nav className="space-y-2">
+      {items.map((item) => {
+        const isActive = pathname === item.href;
+        return (
+          <Link
+            key={item.href}
+            href={item.href}
+            className={`block rounded-2xl px-4 py-3 text-sm font-semibold uppercase tracking-[0.28em] transition ${
+              isActive
+                ? "bg-primary/20 text-primary"
+                : "text-white/60 hover:bg-white/10 hover:text-white"
+            }`}
+          >
+            {item.label}
+          </Link>
+        );
+      })}
+    </nav>
+  );
+}
+```
+
+## Available shadcn/ui Components
+
+The following components are installed and available:
+
+- `accordion` - Collapsible content sections
+- `alert` / `alert-dialog` - Notifications and confirmations
+- `aspect-ratio` - Maintain aspect ratios
+- `avatar` - User profile images
+- `badge` - Status indicators
+- `breadcrumb` - Navigation hierarchy
+- `button` / `button-group` - Action buttons
+- `calendar` - Date picker
+- `card` - Content containers
+- `carousel` - Image/content slider
+- `chart` - Data visualization
+- `checkbox` - Boolean input
+- `collapsible` - Expandable content
+- `command` - Command palette
+- `dialog` - Modal dialogs
+- `drawer` - Side panel
+- `dropdown-menu` - Contextual menus
+- `empty` - Empty state placeholder
+- `field` / `form` - Form components
+- `hover-card` - Popover on hover
+- `input` / `input-group` / `input-otp` - Text inputs
+- `kbd` - Keyboard shortcuts display
+- `label` - Form labels
+- `menubar` - Menu bar navigation
+- `navigation-menu` - Complex navigation
+- `pagination` - Page navigation
+- `popover` - Floating content
+- `progress` - Progress indicators
+- `radio-group` - Radio button groups
+- `resizable` - Resizable panels
+- `scroll-area` - Scrollable content
+- `select` - Dropdown selects
+- `separator` - Visual dividers
+- `sheet` - Side sheets
+- `sidebar` - Application sidebar
+- `skeleton` - Loading placeholders
+- `slider` - Range inputs
+- `sonner` - Toast notifications
+- `spinner` - Loading spinners
+- `switch` - Toggle switches
+- `table` - Data tables
+- `tabs` - Tabbed interfaces
+- `textarea` - Multi-line text input
+- `toggle` / `toggle-group` - Toggle buttons
+- `tooltip` - Contextual hints
+
+## Theming
+
+The application uses CSS variables for theming, defined in `app/globals.css`. Colors automatically adapt to light/dark mode.
+
+### Using Theme Colors
+
+```typescript
+// Background colors
+className="bg-background"      // Main background
+className="bg-card"            // Card background
+className="bg-primary"         // Primary color
+className="bg-secondary"       // Secondary color
+
+// Text colors
+className="text-foreground"          // Main text
+className="text-muted-foreground"    // Muted text
+className="text-primary"             // Primary text
+className="text-destructive"         // Error/danger text
+
+// Border colors
+className="border-input"        // Input borders
+className="border-ring"         // Focus rings
+```
+
+## Best Practices
+
+### Component Composition
+
+Compose existing components rather than creating new ones:
+
+```typescript
+// Good: Compose existing components
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+
+function MyDialog() {
+  return (
+    <Dialog>
+      <DialogTrigger asChild>
+        <Button>Open</Button>
+      </DialogTrigger>
+      <DialogContent>
+        {/* Custom content */}
+      </DialogContent>
+    </Dialog>
+  );
+}
+```
+
+### Server vs Client Components
+
+Use `"use client"` directive only when necessary:
+
+```typescript
+// UI components that need interactivity
+"use client";
+
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+
+export function InteractiveComponent() {
+  const [count, setCount] = useState(0);
+  return <Button onClick={() => setCount(count + 1)}>{count}</Button>;
+}
+```
+
+### Styling Guidelines
+
+1. Use Tailwind utility classes
+2. Leverage CSS variables for theming
+3. Use `cn()` utility for conditional classes
+4. Maintain consistent spacing with Tailwind spacing scale
+
+```typescript
+import { cn } from "@/lib/utils";
+
+<div className={cn(
+  "base-classes",
+  isActive && "active-classes",
+  className // Allow override
+)} />
+```
+
+## Adding New Components
+
+To add shadcn/ui components:
+
+```bash
+npx shadcn@latest add [component-name]
+```
+
+Example:
+
+```bash
+npx shadcn@latest add dropdown-menu
+npx shadcn@latest add popover
+```
+
+This automatically installs the component with proper configuration and dependencies.

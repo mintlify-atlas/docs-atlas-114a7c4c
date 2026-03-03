@@ -1,0 +1,227 @@
+---
+title: Inventory Management
+description: Manage your product catalog, variants, pricing, and stock levels
+icon: boxes-stacked
+---
+
+The Inventory Management system lets you maintain your complete product catalog including items, variants, categories, colors, and pricing structures.
+
+## Overview
+
+Inventory is organized hierarchically with **Items** at the top level and **Variants** representing different sizes, colors, or configurations of each item. The system displays which branch catalog you're currently managing in the page header.
+
+<Note>
+If no branch is selected, you'll see a message: "No branch selected. Assign a branch to manage inventory."
+</Note>
+
+## Catalog Items Table
+
+The main inventory page displays all your catalog items in a comprehensive table with these columns:
+
+<CardGroup cols={2}>
+  <Card title="Code" icon="barcode">
+    Unique item identifier displayed in uppercase monospace font with increased letter spacing for easy reading.
+  </Card>
+  
+  <Card title="Name" icon="tag">
+    Product name displayed in medium font weight for clear identification.
+  </Card>
+  
+  <Card title="Category" icon="folder">
+    Associated category name, or "—" if no category is assigned.
+  </Card>
+  
+  <Card title="Variants" icon="list">
+    Detailed list of all variants for the item, including SKU, size label, and base price.
+  </Card>
+</CardGroup>
+
+## Variant Display
+
+For each item, variants are shown with structured information:
+
+- **SKU** - Stock Keeping Unit in medium font weight
+- **Size Label** - Displayed as an outlined badge
+- **Base Price** - Formatted in Indian Rupees (₹) with thousands separators
+
+If an item has no variants yet, the table displays:
+
+> "No variants yet"
+
+## Adding Items
+
+The **"Add item"** button in the top right corner navigates to `/inventory/items/new` where you can:
+
+1. Create a new catalog item
+2. Assign item code and name
+3. Select category
+4. Set base attributes
+
+<Tip>
+Plan your item codes carefully - use a consistent naming convention across your catalog for easier searching and reporting.
+</Tip>
+
+## Managing Items
+
+Each item row includes a **"MANAGE"** link button that navigates to the item detail page (`/inventory/items/{id}`). From there you can:
+
+- Edit item properties
+- Add new variants
+- Modify variant pricing
+- Update stock levels
+- View variant history
+
+## Variant Management
+
+Variants represent different configurations of the same base item. Common variant types include:
+
+- **Size variants** - S, M, L, XL, XXL
+- **Color variants** - Different colors of the same style
+- **Configuration variants** - Different feature sets
+
+### Variant Properties
+
+Each variant tracks:
+
+- Unique SKU
+- Size label for display
+- Base price for selling
+- Base cost for margins
+
+## Categories and Organization
+
+Items can be organized into categories for:
+
+- Easier browsing and filtering
+- Reporting by product line
+- Promotional planning
+- Inventory analysis
+
+Categories are managed separately and can be accessed via the inventory navigation.
+
+## Empty States
+
+When no items exist in your catalog, the table shows:
+
+> "No items yet. Create your first item."
+
+This prompts you to click the "Add item" button to begin building your catalog.
+
+## Best Practices
+
+### Catalog Structure
+
+1. **Use Consistent Item Codes** - Establish a coding system (e.g., SHIRT-001, PANT-001) for logical organization
+2. **Create Categories First** - Set up your category structure before adding items
+3. **Plan Variant Strategy** - Decide whether to use size, color, or both as variant dimensions
+4. **Maintain Clean SKUs** - Use SKUs that are easy to read and type at the POS
+
+### Pricing Strategy
+
+1. **Set Base Prices Carefully** - Ensure base prices include appropriate margins
+2. **Track Both Cost and Price** - Record base_cost to monitor profitability
+3. **Regular Price Reviews** - Update pricing when costs change from vendors
+4. **Consider Bundle Pricing** - Use variants creatively for package deals
+
+### Variant Organization
+
+1. **Standard Size Labels** - Use consistent size naming (S/M/L vs Small/Medium/Large)
+2. **Logical SKU Structure** - Include item code in variant SKUs (e.g., SHIRT-001-M)
+3. **Complete Variant Coverage** - Add all size options customers expect
+4. **Document Measurements** - Keep size charts handy for customer service
+
+### Data Quality
+
+1. **Verify Before Publishing** - Double-check all item details before making items available for sale
+2. **Use Categories Consistently** - Don't leave items uncategorized
+3. **Regular Audits** - Review the catalog quarterly to remove discontinued items
+4. **Standardize Naming** - Use title case or sentence case consistently
+
+## Integration with Other Features
+
+### Point of Sale
+
+Inventory items and variants are directly available in the POS system for:
+
+- Adding to sale carts
+- Price lookup
+- SKU scanning
+- Quick search
+
+### Purchases
+
+When receiving stock from vendors:
+
+- Link purchase items to catalog items
+- Update variant stock levels
+- Track cost fluctuations
+
+### Reporting
+
+Inventory data feeds into:
+
+- Sales reports by item/category
+- Stock movement analysis
+- Profitability calculations
+- Reorder recommendations
+
+## Data Structure
+
+Inventory data is stored in Supabase with this relationship:
+
+```
+item (parent)
+├── id
+├── code
+├── name
+└── category_id → category.name
+    └── item_variant (children)
+        ├── id
+        ├── sku
+        ├── size_label
+        ├── base_price
+        └── base_cost
+```
+
+The system uses a JOIN query to fetch items with their categories and variants in a single efficient database call.
+
+## Navigation Structure
+
+The inventory system includes several sub-pages:
+
+- `/inventory` - Main catalog view
+- `/inventory/items/new` - Create new item
+- `/inventory/items/{id}` - Item detail and edit
+- `/inventory/items/{id}/variants/new` - Create variant
+- `/inventory/categories` - Manage categories
+- `/inventory/colors` - Manage color options
+
+<Tip>
+The inventory table automatically orders items alphabetically by name for consistent browsing.
+</Tip>
+
+## Common Scenarios
+
+### Setting Up Initial Catalog
+
+1. Navigate to `/inventory/categories` and create your product categories
+2. Return to `/inventory` and click "Add item"
+3. Fill in item details and assign category
+4. After creating item, add variants for all available sizes
+5. Set pricing for each variant
+6. Repeat for all products
+
+### Adding Seasonal Items
+
+1. Create items with seasonal indicators in the name
+2. Use categories to group seasonal collections
+3. Update variant availability as seasons change
+4. Archive or hide off-season items
+
+### Managing Price Changes
+
+1. Navigate to the item's manage page
+2. Review current pricing for all variants
+3. Update base_price for each affected variant
+4. Document the price change date
+5. Communicate changes to POS staff

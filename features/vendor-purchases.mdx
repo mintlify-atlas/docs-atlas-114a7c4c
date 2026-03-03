@@ -1,0 +1,293 @@
+---
+title: Vendor & Purchases
+description: Manage supplier relationships, procurement tracking, and payment obligations
+icon: truck-field
+---
+
+The Vendor & Purchases system tracks your supplier relationships, procurement history, payment obligations, and outstanding balances across your supply chain.
+
+## Overview
+
+Vendor management provides comprehensive tracking of suppliers, purchase orders, received inventory, and payment status. All purchase data is filtered by your active branch while vendor profiles remain organization-wide.
+
+<Note>
+You must be assigned to a branch before managing vendor records. Without branch assignment, you'll see "No branch assigned" with instructions to contact your administrator.
+</Note>
+
+## Page Header and Search
+
+The vendor partners page displays:
+
+- Page title: "Vendor partners"
+- Description: "Monitor procurement spend and payables for [branch name]"
+- Search bar with placeholder: "Search name, phone, or email"
+- **"Search"** button to execute queries
+- **"Reset"** button (visible only when search is active)
+- Add vendor button (opens dialog)
+
+## Key Metrics
+
+Three summary cards provide procurement insights for the current page:
+
+<CardGroup cols={3}>
+  <Card title="Vendors" icon="building">
+    Total count of supplier records managed in your Supabase database.
+  </Card>
+  
+  <Card title="Page Procured" icon="boxes-stacked">
+    Total purchase spend attributed to vendors listed on the current page.
+  </Card>
+  
+  <Card title="Page Outstanding" icon="scale-unbalanced">
+    Sum of unpaid balances to vendors on current page, with total paid amount shown as helper text.
+  </Card>
+</CardGroup>
+
+## Search Functionality
+
+The search feature supports finding vendors by:
+
+- **Vendor name** (case-insensitive partial match)
+- **Phone number** (case-insensitive partial match)
+- **Email address** (case-insensitive partial match)
+
+Search uses SQL ILIKE with wildcard matching for flexible queries.
+
+<Tip>
+You can search by any part of the vendor name, phone, or email - the system automatically matches partial strings.
+</Tip>
+
+## Outstanding Balances Table
+
+The primary table displays vendors sorted by outstanding balance (highest first), showing up to 10 vendors:
+
+### Columns
+
+- **Vendor** - Supplier name in medium font weight
+- **Phone** - Contact phone number, or "—" if not provided
+- **Orders** - Total number of purchase orders from this vendor
+- **Procured** - Total purchase amount in Indian Rupees (₹)
+- **Outstanding** - Unpaid balance, or "—" if fully paid
+- **Last Purchase** - Date of most recent purchase in "DD MMM YYYY" format, or "Never"
+- **Actions** - Dropdown menu for vendor operations
+
+### Empty State
+
+When no vendor purchases exist:
+
+> "No vendor purchases recorded yet. Log a purchase to see standings."
+
+## Latest Vendor Additions Table
+
+A secondary table shows the 10 most recently active or added suppliers:
+
+### Columns
+
+- **Vendor** - Supplier name
+- **Contact** - Contact person name with email/phone in muted text below
+- **GST** - GST number, or "—" if not provided
+- **Last Payment** - Date of most recent payment in "DD MMM YYYY" format, or "No payment"
+- **Actions** - Dropdown menu for vendor operations
+
+### Empty State
+
+> "No supplier activity captured yet."
+
+## Pagination
+
+Vendor directory displays 10 vendors per page with full pagination controls:
+
+- **Previous** button (disabled on first page)
+- **Page numbers** with ellipsis for large datasets
+- **Next** button (disabled on last page)
+
+Pagination preserves search state - your query carries through navigation.
+
+## Adding Vendors
+
+Click the add vendor button to open the **Add Vendor Dialog** where you can enter:
+
+- Vendor name (required)
+- Contact person name
+- Phone number
+- Email address
+- GST number (for tax compliance)
+- Physical address
+
+## Vendor Analytics
+
+For each vendor, the system automatically calculates:
+
+### Procurement Metrics
+
+- **Total Procured** - Sum of all `total_amount` from purchases
+- **Orders** - Count of purchase orders
+- **Last Purchase** - Most recent `purchase_date`
+
+### Payment Tracking
+
+- **Total Paid** - Sum of all payments made to vendor
+- **Last Payment** - Most recent `paid_at` timestamp
+- **Outstanding** - Calculated as `total_procured - total_paid`
+
+<Note>
+Outstanding balance calculation: `max(total_procured - total_paid, 0)` ensures non-negative values.
+</Note>
+
+## Vendor Actions Menu
+
+The actions dropdown for each vendor provides quick access to:
+
+- Edit vendor details
+- Record new purchase
+- Log payment
+- View purchase history
+- View payment history
+
+## Best Practices
+
+### Vendor Onboarding
+
+1. **Complete Profile Information** - Capture GST number, contact details, and address during onboarding
+2. **Verify GST Numbers** - Validate GST numbers against government database
+3. **Document Terms** - Note payment terms and credit limits in vendor notes
+4. **Emergency Contacts** - Store alternate phone numbers and email addresses
+
+### Purchase Management
+
+1. **Consistent Recording** - Log every purchase immediately upon receipt
+2. **Link to Branch** - Ensure purchases are assigned to the correct branch
+3. **Verify Amounts** - Double-check total_amount against vendor invoice
+4. **Track Delivery Dates** - Use purchase_date for when goods were received
+
+### Payment Discipline
+
+1. **Prioritize by Outstanding** - The Outstanding Balances table sorts automatically
+2. **Pay on Schedule** - Maintain good supplier relationships with timely payments
+3. **Record Partial Payments** - Log every payment, even if partial
+4. **Reconcile Monthly** - Compare your records with vendor statements
+
+### Supplier Relationships
+
+1. **Monitor Top Suppliers** - Identify your most important vendors by procured amount
+2. **Diversify Sources** - Don't over-rely on single suppliers
+3. **Track Performance** - Note quality issues or delivery delays
+4. **Negotiate Terms** - Use purchase history data in price negotiations
+
+## Data Integration
+
+### Vendor Table Schema
+
+- `id` - Unique vendor identifier
+- `name` - Supplier business name
+- `contact_name` - Contact person
+- `phone` - Contact phone number
+- `email` - Contact email address
+- `gst_number` - Tax registration number
+- `address` - Physical address
+- `created_at` - Record creation timestamp
+
+### Purchase Relationship
+
+Vendors link to purchases via `vendor_id`. The system:
+
+1. Fetches paginated vendor list
+2. Retrieves all purchases for those vendors filtered by active branch
+3. Fetches all payments linked to those purchases
+4. Aggregates totals, orders, and dates
+5. Calculates outstanding balances
+6. Sorts and displays results
+
+### Payment Relationship
+
+Payments link to purchases via `purchase_id` and vendors via `vendor_id`:
+
+- Payments without purchase_id are general vendor payments
+- Payments with purchase_id are specific to that purchase
+- System filters payments to only include those for relevant purchases
+
+<Tip>
+The system only counts payments associated with purchases from your active branch, preventing cross-branch data leakage.
+</Tip>
+
+## Common Workflows
+
+### Adding a New Vendor
+
+1. Click add vendor button in top right
+2. Enter vendor name (required)
+3. Add contact person and details
+4. Enter GST number if available
+5. Add address for delivery coordination
+6. Click save
+7. Vendor is now available for purchase creation
+
+### Recording a Purchase
+
+1. From vendor actions menu, select "Record new purchase"
+2. Or navigate to `/purchases/new`
+3. Select vendor from dropdown
+4. Enter purchase date (when goods received)
+5. Add line items with quantities and costs
+6. System calculates total_amount
+7. Save purchase record
+8. Outstanding balance updates automatically
+
+### Making a Payment
+
+1. Navigate to vendor with outstanding balance
+2. Click actions menu > "Log payment"
+3. Select which purchase(s) to pay against
+4. Enter payment amount
+5. Set payment date (paid_at)
+6. Note payment method if needed
+7. Save payment
+8. Outstanding recalculates instantly
+
+### Reconciling Vendor Statements
+
+1. Request statement from vendor
+2. Filter your purchases by vendor
+3. Compare vendor statement line items with your purchase records
+4. Identify any discrepancies
+5. Log any missing payments
+6. Contact vendor about any unexplained charges
+
+### Managing Overdue Payables
+
+1. Sort Outstanding Balances table by highest first
+2. Review last purchase date for each
+3. Calculate payment terms elapsed
+4. Prioritize vendors with oldest outstanding balances
+5. Arrange payment or communicate revised schedule
+6. Log payments as made
+
+## Multi-Branch Considerations
+
+Vendor profiles are organization-wide, but:
+
+- **Purchase records** are branch-specific
+- **Procured amounts** only include your branch purchases
+- **Outstanding balances** only reflect your branch payables
+- **Payment records** are filtered to your branch purchases
+
+If multiple branches buy from the same vendor:
+
+- Vendor profile is shared across branches
+- Each branch sees only their own purchases and payments
+- Organization owner can view consolidated vendor data
+- GST number and contact details are centrally managed
+
+<Note>
+This design maintains data privacy between branches while avoiding duplicate vendor profiles.
+</Note>
+
+## Reporting and Analysis
+
+Use vendor data for:
+
+- **Cash flow planning** - Outstanding balances inform payment schedules
+- **Supplier concentration** - Procured amounts show dependency levels
+- **Inventory planning** - Orders count and last purchase date guide reordering
+- **Cost analysis** - Track price trends across purchase history
+- **Tax compliance** - GST numbers and amounts for reporting

@@ -1,0 +1,414 @@
+---
+title: User Roles & Permissions
+description: Understanding user roles, permissions, and access control in Pramukh Men's Wear
+---
+
+This guide explains the three user roles in Pramukh Men's Wear and what each role can do in the system.
+
+## Role Overview
+
+Pramukh Men's Wear uses a role-based access control system with three levels:
+
+- **Owner**: Full system access, manages all branches and users
+- **Manager**: Branch-level management and administrative tasks
+- **Cashier**: Day-to-day sales and customer service operations
+
+Roles can be assigned both globally (in the user profile) and per-branch (in branch assignments), giving you flexibility in managing multi-location operations.
+
+## Role Details
+
+### Owner
+
+Owners have complete control over the system and are typically business owners or senior management.
+
+**What Owners Can Do:**
+
+<CardGroup cols={2}>
+  <Card title="Branch Management" icon="store">
+    - Create and edit branches
+    - View all branches
+    - Delete branches (if no transactions exist)
+    - Configure branch details (address, phone, email)
+  </Card>
+
+  <Card title="User Management" icon="users">
+    - Invite new users
+    - Assign users to branches
+    - Change user roles
+    - Remove users from branches
+    - View all user activity
+  </Card>
+
+  <Card title="Inventory Control" icon="boxes">
+    - Create and edit categories
+    - Manage color palette
+    - Add and edit items
+    - Create and modify variants
+    - Set pricing and costs
+    - Deactivate items
+  </Card>
+
+  <Card title="Purchase Management" icon="truck">
+    - Create and manage vendors
+    - Record purchase orders
+    - Edit existing purchases
+    - Record vendor payments
+    - View all branch purchases
+  </Card>
+
+  <Card title="Sales Operations" icon="cash-register">
+    - Process sales at any branch
+    - Apply discounts
+    - Accept payments
+    - Process returns and exchanges
+    - View all sales across branches
+    - Modify completed sales (if needed)
+  </Card>
+
+  <Card title="Financial Reports" icon="chart-line">
+    - View cross-branch analytics
+    - Export financial data
+    - Review payment histories
+    - Track outstanding dues
+    - Monitor inventory costs
+  </Card>
+</CardGroup>
+
+**Use Cases:**
+- Business owner overseeing multiple locations
+- Chief operating officer managing daily operations
+- Head of retail managing all stores
+
+### Manager
+
+Managers handle branch-level operations and can make business decisions within their assigned locations.
+
+**What Managers Can Do:**
+
+<CardGroup cols={2}>
+  <Card title="Inventory Management" icon="warehouse">
+    - Create categories and colors
+    - Add items and variants
+    - Update pricing
+    - Manage stock for their branch
+    - Deactivate variants
+  </Card>
+
+  <Card title="Purchase Operations" icon="file-invoice">
+    - Create and edit vendors
+    - Record purchase orders
+    - Add purchase items
+    - Record vendor payments
+    - View branch purchase history
+  </Card>
+
+  <Card title="Sales Functions" icon="shopping-cart">
+    - Process sales
+    - Apply discounts
+    - Accept payments
+    - Handle returns and exchanges
+    - View branch sales
+  </Card>
+
+  <Card title="Team Coordination" icon="users-gear">
+    - View branch team members
+    - Monitor cashier activity
+    - Assist with customer issues
+    - Override cashier permissions when needed
+  </Card>
+</CardGroup>
+
+**What Managers Cannot Do:**
+
+- Create or edit branches
+- Assign users to branches
+- Change user roles
+- Access other branches' data (unless assigned to multiple branches)
+- Modify system-wide settings
+
+**Use Cases:**
+- Store manager of a single location
+- Assistant manager handling operations
+- Department head managing specific product lines
+
+### Cashier
+
+Cashiers handle customer-facing transactions and day-to-day sales operations.
+
+**What Cashiers Can Do:**
+
+<CardGroup cols={2}>
+  <Card title="Point of Sale" icon="cash-register">
+    - Process customer sales
+    - Select items from inventory
+    - Add customer details
+    - Accept payments (cash, UPI, card)
+    - Print/share receipts
+  </Card>
+
+  <Card title="Customer Service" icon="headset">
+    - Look up customer history
+    - Check item availability
+    - Provide product information
+    - Hold sales for later completion
+  </Card>
+
+  <Card title="Basic Inventory" icon="barcode">
+    - Search items and variants
+    - View item details
+    - Check pricing
+    - View stock levels (if visible)
+  </Card>
+
+  <Card title="Daily Operations" icon="clipboard">
+    - View their own sales
+    - View daily collection totals
+    - Access recent transaction history
+  </Card>
+</CardGroup>
+
+**What Cashiers Cannot Do:**
+
+- Apply discounts (unless specifically authorized)
+- Process returns or exchanges
+- Edit completed sales
+- Create or modify inventory items
+- Record purchases from vendors
+- Access financial reports
+- View other branches' data
+- Change prices
+
+**Use Cases:**
+- Front-desk sales staff
+- Billing counter operators
+- Part-time sales associates
+
+## Branch Assignments
+
+Users can be assigned to one or multiple branches, and their role can differ per branch.
+
+### How Branch Assignment Works
+
+<Steps>
+  <Step title="User Profile Role">
+    Every user has a default role set in their profile:
+    
+    - This is their base permission level
+    - Set when the user account is created
+    - Can be changed by owners
+  </Step>
+
+  <Step title="Branch-Specific Role">
+    When a user is assigned to a branch, they get a role for that branch:
+    
+    - Can be different from their profile role
+    - Allows flexibility (e.g., manager at one branch, cashier at another)
+    - Overrides the profile role when working at that branch
+  </Step>
+
+  <Step title="Active Branch Context">
+    When a user logs in:
+    
+    - They select which branch they're working at
+    - The system applies their role for that branch
+    - All actions are scoped to that branch
+    - Owners see data from all branches
+  </Step>
+</Steps>
+
+### Multi-Branch Scenarios
+
+**Scenario 1: Manager at Multiple Locations**
+```
+User: Rahul
+Profile role: Manager
+Branch assignments:
+  - Mumbai Store: Manager
+  - Pune Store: Manager
+  
+Rahul can manage inventory and purchases at both locations,
+switching between them as needed.
+```
+
+**Scenario 2: Different Roles at Different Branches**
+```
+User: Priya
+Profile role: Cashier
+Branch assignments:
+  - Flagship Store: Manager
+  - Mall Outlet: Cashier
+  
+Priya has manager permissions at the flagship store but
+cashier permissions at the mall outlet.
+```
+
+**Scenario 3: Owner with Branch Access**
+```
+User: Amit (Owner)
+Profile role: Owner
+Branch assignments:
+  - All branches (automatic)
+  
+Amit can access and manage all branches from a single login,
+view cross-branch reports, and manage users globally.
+```
+
+## Permission Matrix
+
+Here's a quick reference of what each role can do:
+
+| Feature | Owner | Manager | Cashier |
+|---------|-------|---------|--------|
+| Process sales | ✓ | ✓ | ✓ |
+| Apply discounts | ✓ | ✓ | Limited* |
+| Create items | ✓ | ✓ | ✗ |
+| Edit pricing | ✓ | ✓ | ✗ |
+| Record purchases | ✓ | ✓ | ✗ |
+| Manage vendors | ✓ | ✓ | ✗ |
+| Process returns | ✓ | ✓ | ✗ |
+| Create branches | ✓ | ✗ | ✗ |
+| Assign users | ✓ | ✗ | ✗ |
+| View all branches | ✓ | ✗** | ✗** |
+| Financial reports | ✓ | Limited*** | ✗ |
+
+*Cashiers may have limited discount authority set by management
+
+**Managers and cashiers only see branches they're assigned to
+
+***Managers see reports for their branch(es) only
+
+## Assigning Roles
+
+Only owners can assign users to branches and change roles.
+
+<Steps>
+  <Step title="Navigate to User Management">
+    From the admin panel, go to **Users** or **Team**.
+    
+    You'll see a list of all users with their current roles and branch assignments.
+  </Step>
+
+  <Step title="Add User to Branch">
+    Select a user and click **"Assign to branch"**.
+    
+    Choose:
+    - The branch to assign them to
+    - Their role at that branch
+    - Effective date (optional)
+  </Step>
+
+  <Step title="Change User Role">
+    To change a user's role at a branch:
+    
+    1. Find the branch assignment
+    2. Click **"Edit role"**
+    3. Select the new role
+    4. Save changes
+    
+    The change takes effect immediately.
+  </Step>
+
+  <Step title="Remove Branch Access">
+    To remove a user from a branch:
+    
+    1. Find the branch assignment
+    2. Click **"Remove from branch"**
+    3. Confirm the removal
+    
+    The user loses access to that branch but retains access to other assigned branches.
+  </Step>
+</Steps>
+
+## Security Best Practices
+
+<AccordionGroup>
+  <Accordion title="Follow the Principle of Least Privilege">
+    Give users only the access they need:
+    
+    - New hires start as cashiers
+    - Promote to manager only when they need inventory/purchase management
+    - Keep owner role limited to actual business owners
+    
+    This reduces the risk of accidental changes or data exposure.
+  </Accordion>
+
+  <Accordion title="Review Access Regularly">
+    Periodically audit user roles:
+    
+    - Remove access for users who leave
+    - Downgrade roles when job responsibilities change
+    - Verify branch assignments match current work locations
+    
+    Set a quarterly review schedule.
+  </Accordion>
+
+  <Accordion title="Document Role Changes">
+    Keep notes on why roles were assigned or changed:
+    
+    - Promotion dates
+    - Business justification
+    - Who authorized the change
+    
+    This creates an audit trail for compliance and troubleshooting.
+  </Accordion>
+
+  <Accordion title="Train Users on Their Role">
+    When assigning a role:
+    
+    - Explain what they can and cannot do
+    - Show them relevant features
+    - Document common tasks for their role
+    - Provide a contact for permission requests
+    
+    Proper training prevents confusion and improper use.
+  </Accordion>
+</AccordionGroup>
+
+<Accordion title="Can a cashier see other cashiers' sales?">
+  It depends on system configuration:
+  
+  - By default, cashiers see all sales for their branch (for customer service)
+  - Some businesses configure cashier-only views where they see only their own transactions
+  - Managers and owners always see all sales
+  
+  Check with your owner or system administrator for your specific setup.
+</Accordion>
+
+<Accordion title="What happens if I'm assigned to multiple branches?">
+  When logging in, you'll:
+  
+  1. See a branch selector on the home screen
+  2. Choose which branch you're working at
+  3. All your actions apply to that branch
+  4. Your role for that branch determines your permissions
+  5. Switch branches anytime from the branch selector
+  
+  This lets you manage multiple locations without separate accounts.
+</Accordion>
+
+<Accordion title="Can I temporarily elevate a cashier's permissions?">
+  Not directly. To give a cashier manager permissions:
+  
+  1. Owner must edit their branch assignment
+  2. Change role from Cashier to Manager
+  3. The change takes effect immediately
+  4. Change back when temporary need ends
+  
+  For one-time needs, consider having a manager perform the task instead.
+</Accordion>
+
+<Accordion title="Do role changes affect historical data?">
+  No. Role changes only affect future actions:
+  
+  - Past sales show the original cashier
+  - Old purchases retain the original recorder
+  - Historical reports remain unchanged
+  
+  All historical data maintains its original context even if roles change.
+</Accordion>
+
+## Next Steps
+
+- Learn how to [create your first sale](/guides/creating-first-sale) with your assigned role
+- Explore [managing inventory](/guides/managing-inventory) if you're a manager or owner
+- Understand [recording purchases](/guides/recording-purchases) for vendor management
